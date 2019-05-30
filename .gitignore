@@ -1,0 +1,4 @@
+App/bin/*
+App/obj/*
+Tests/bin/*
+Tests/obj/*
