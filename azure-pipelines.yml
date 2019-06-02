@@ -6,8 +6,6 @@ pool:
 
 variables:
   buildConfiguration: 'Release'
-  packageVersion: '0.1.0'
-
 
 steps:
 - script: dotnet build --configuration $(buildConfiguration)
@@ -17,9 +15,9 @@ steps:
 - script: dotnet pack --configuration $(buildConfiguration)
   displayName: 'dotnet pack'
 - task: NuGetCommand@2
-  displayName: 'dotnet nuget publish'
+  displayName: 'nuget publish'
   inputs:
     command: 'push'
-    packagesToPush: './App/bin/$(buildConfiguration)/Badgie.Migrator.$(packageVersion).nupkg'
-    nuGetFeedType: 'internal'
-    publishVstsFeed: '/e1b49793-88dd-47fb-9e13-59e4ffa1c1a3'
+    packagesToPush: './App/bin/$(buildConfiguration)/*.nupkg'
+    nuGetFeedType: 'external'
+    publishFeedCredentials: 'Public NuGet'
