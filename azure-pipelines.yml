@@ -6,6 +6,8 @@ pool:
 
 variables:
   buildConfiguration: 'Release'
+  packageVersion: '0.1.0'
+
 
 steps:
 - script: dotnet build --configuration $(buildConfiguration)
@@ -14,5 +16,10 @@ steps:
   displayName: 'dotnet test'
 - script: dotnet pack --configuration $(buildConfiguration)
   displayName: 'dotnet pack'
-- script: dotnet nuget push -Source "Badgiet" -ApiKey AzureDevOps ./App/bin/Release/Badgine.Migrator.0.1.0.nupkg
-  displayName: 'dotnet nuget push'
+- task: NuGetCommand@2
+  displayName: 'dotnet nuget publish'
+  inputs:
+    command: 'push'
+    packagesToPush: './App/bin/$(buildConfiguration)/Badgie.Migrator.$(packageVersion).nupkg'
+    nuGetFeedType: 'internal'
+    publishVstsFeed: '/e1b49793-88dd-47fb-9e13-59e4ffa1c1a3'
