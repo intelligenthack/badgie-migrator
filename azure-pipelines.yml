@@ -9,8 +9,10 @@ variables:
 
 steps:
 - script: dotnet build --configuration $(buildConfiguration)
-  displayName: 'dotnet build $(buildConfiguration)'
+  displayName: 'dotnet build'
 - script: dotnet test --configuration $(buildConfiguration)
-  displayName: 'dotnet test $(buildConfiguration)'
+  displayName: 'dotnet test'
 - script: dotnet pack --configuration $(buildConfiguration)
-  displayName: 'dotnet pack $(buildConfiguration)'
+  displayName: 'dotnet pack'
+- script: dotnet nuget push -Source "Badgiet" -ApiKey AzureDevOps ./App/bin/Release/Badgine.Migrator.0.1.0.nupkg
+  displayName: 'dotnet nuget push'
