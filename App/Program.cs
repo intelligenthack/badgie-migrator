@@ -25,7 +25,7 @@ namespace Badgie.Migrator
             {
                 case 0:
                 default:
-                    Console.Error.WriteLine(@"Usage: badgie-migrator <connection string> [drive:][path][filename] [-f] [-i]
+                    Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-f] [-i]
 -f runs mutated migrations
 -i if needed, installs the db table needed to store state");
                     Console.Beep();
@@ -149,7 +149,7 @@ CREATE TABLE ""public"".MigrationRuns (
             }
             MigrationRun run;
             using (var conn = new NpgsqlConnection(_connectionString))
-                run = conn.QueryFirstOrDefault<MigrationRun>("select * from public.MigrationRuns where Filename = @migrationFilename", new { migrationFilename });
+                run = conn.QueryFirstOrDefault<MigrationRun>("select * from public.MigrationRuns where Filename = @migrationFilename", new { migrationFilename = Path.GetFileName(migrationFilename) });
             if (run != null)
             {
                 if (crc == run.MD5) return MigrationResult.Skipped;
@@ -160,7 +160,7 @@ CREATE TABLE ""public"".MigrationRuns (
                         conn.Execute("update public.MigrationRuns set LastRun = @LastRun, MigrationResult = @MigrationResult, MD5 = @MD5 where Filename = @Filename", new MigrationRun
                         {
                             LastRun = DateTime.UtcNow,
-                            Filename = migrationFilename,
+                            Filename = Path.GetFileName(migrationFilename),
                             MD5 = crc,
                             MigrationResult = MigrationResult.Changed
                         });
@@ -172,7 +172,7 @@ CREATE TABLE ""public"".MigrationRuns (
                 conn.Execute("insert into public.MigrationRuns (LastRun, MigrationResult, MD5, Filename) values (@LastRun, @MigrationResult, @MD5, @Filename)", new MigrationRun
                 {
                     LastRun = DateTime.UtcNow,
-                    Filename = migrationFilename,
+                    Filename = Path.GetFileName(migrationFilename),
                     MD5 = crc,
                     MigrationResult = MigrationResult.Run
                 });
