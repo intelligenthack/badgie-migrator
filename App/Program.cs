@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using Dapper;
 using System.Text.RegularExpressions;
 using System.IO;
@@ -8,69 +9,86 @@ using System.Text;
 using System.Data.Common;
 using Npgsql;
 using System.Diagnostics;
+using System.Data.SqlClient;
 
 namespace Badgie.Migrator
 {
+    enum SqlType
+    {
+        Postgres,
+        SqlServer
+    }
+
     class Program
     {
-        static string _connectionString;
-        static bool _force = false;
+        private static string _connectionString;
+        private static bool _force = false;
         private static bool _install = false;
+        private static SqlType _sqltype = SqlType.Postgres;
+        private static string path = ".";
+
         static void Main(string[] args)
         {
             var time = new Stopwatch();
             time.Start();
-            var path = ".";
-            switch (args.Length)
+
+            if (args.Length == 0)
             {
-                case 0:
-                default:
-                    Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-f] [-i]
+                Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-d:(SqlServer|Postgres)] [-f] [-i]
 -f runs mutated migrations
 -i if needed, installs the db table needed to store state");
-                    Console.Beep();
-                    Environment.Exit(-2);
-                    return;
-                case 1:
-                    _connectionString = args[0];
-                    break;
-                case 2:
-                    _connectionString = args[0];
-                    if (args[1] == "-f") 
-                        _force = true;
-                    else if (args[1] == "-i") 
-                        _install = true;
-                    else
-                        path = args[1];
-                    break;
-                case 3:
-                    _connectionString = args[0];
-                    path = args[1];
-                    if (args[2] == "-f") 
-                        _force = true;
-                    else if (args[2] == "-i") 
-                        _install = true;
-                    else if (args[2] == "-fi" || args[2] == "-if") 
-                    {
-                        _force = true;
-                        _install = true;
-                    }
-                    break;
-                case 4:
-                    _connectionString = args[0];
-                    path = args[1];
-                    if (args[2] == "-f" && args[3] == "-i" || args[2] == "-i" && args[3] == "-f") 
-                    {
-                        _force = true;
-                        _install = true;
-                    }
-                    break;
+                Console.Beep();
+                Environment.Exit(-2);
             }
-            
+
+            _connectionString = args[0];
+
+            if (args.Length > 1)
+            {
+                var pars = new String[args.Length - 1];
+                Array.Copy(args, 1, pars, 0, args.Length-1);
+                ParseParameters(pars);
+            }
+
+
             if (!EnsureTableExists()) Error("Database does not have data table installed, did you forget to pass \"-i\"?");
             if (!ExecuteFolder(path)) Error("Execution error");
             time.Stop();
             Console.WriteLine("All done in {0:0} ms", time.Elapsed.TotalMilliseconds);
+        }
+
+        private static void ParseParameters(String[] pars)
+        {
+            foreach (var str in pars)
+            {
+                switch (str.Substring(0, 2))
+                {
+                    case "-f":
+                        _force = true;
+                        break;
+
+                    case "-i":
+                        _install = true;
+                        break;
+
+                    case "-d":
+                        _sqltype = CheckDbType(str);
+                        break;
+
+                    default:
+                        path = str;
+                        break;
+                }
+            }
+        }
+
+
+        private static SqlType CheckDbType(String str)
+        {
+            if (str.Length < 4) Error("Database type unspecified");
+            var strType = str.Substring(3, str.Length - 3);
+            if (!Enum.TryParse<SqlType>(strType, out var sqlType)) Error($"Unrecognized database type {strType}");
+            return sqlType;
         }
 
         public static void Error(string error)
@@ -82,12 +100,65 @@ namespace Badgie.Migrator
         public static bool EnsureTableExists()
         {
             bool installed;
-            using (var x = new NpgsqlConnection(_connectionString))
-             installed = x.GetSchema("Tables", new string[] {null, "public", "migrationruns", null}).Rows.Count > 0;
+            using (var x = CreateConnection())
+            {
+                switch (_sqltype)
+                {
+                    case SqlType.Postgres:
+                        installed = x.GetSchema("Tables", new string[] { null, "public", "migrationruns", null }).Rows.Count > 0;
+                        break;
+
+                    case SqlType.SqlServer:
+                        installed = x.GetSchema("Tables", new string[] { null, "dbo", "MigrationRuns", null }).Rows.Count > 0;
+                        break;
+
+                    default:
+                        throw new NotSupportedException();
+                }
+            }
+
             if (!installed && _install)
             {
-                using (var x = new NpgsqlConnection(_connectionString))
-                    x.Execute(@"
+                using (var x = CreateConnection())
+                    x.Execute(TableCreationStatement());
+                installed = true;
+            }
+            return installed;
+        }
+
+        private static DbConnection CreateConnection()
+        {
+            switch (_sqltype)
+            {
+                case SqlType.Postgres:
+                    return new NpgsqlConnection(_connectionString);
+                case SqlType.SqlServer:
+                    var conn =  new SqlConnection(_connectionString);
+                    if (conn.State == ConnectionState.Broken || conn.State == ConnectionState.Closed)
+                        conn.Open();
+                    return conn;
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+
+
+        private static string TableCreationStatement()
+        {
+            switch (_sqltype)
+            {
+                case SqlType.SqlServer:
+                    return @"
+CREATE TABLE [dbo].[MigrationRuns] (
+    Id              INT             IDENTITY (1, 1) NOT NULL,
+    LastRun         DATETIME        NOT NULL,
+    Filename        NVARCHAR(2000)  NOT NULL,
+    MD5             VARCHAR(50)     NOT NULL,
+    MigrationResult TINYINT         NOT NULL,
+    CONSTRAINT [PK_MigrationRuns] PRIMARY KEY CLUSTERED ([Id] ASC)
+);";
+                case SqlType.Postgres:
+                    return @"
 CREATE SEQUENCE MigrationRuns_Id_seq INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 START 1 CACHE 1;
 CREATE TABLE ""public"".MigrationRuns (
     Id integer DEFAULT nextval('MigrationRuns_Id_seq') NOT NULL,
@@ -96,16 +167,16 @@ CREATE TABLE ""public"".MigrationRuns (
     MD5 character varying(50) NOT NULL,
     MigrationResult integer NOT NULL,
     CONSTRAINT ""MigrationRuns_Id"" PRIMARY KEY (Id)
-) WITH (oids = false);");
-                installed = true;
+) WITH (oids = false);";
+                default:
+                    throw new NotSupportedException();
             }
-            return installed;
         }
 
         public static bool ExecuteFolder(string path)
         {
             var info = new FileInfo(path);
-            foreach(var file in Directory.EnumerateFiles(info.Directory.FullName, info.Name).OrderBy(f => f))
+            foreach (var file in Directory.EnumerateFiles(info.Directory.FullName, info.Name).OrderBy(f => f))
             {
                 MigrationResult result;
                 try
@@ -118,7 +189,7 @@ CREATE TABLE ""public"".MigrationRuns (
                     return false;
                 }
                 Console.WriteLine("{0} - {1}", result, file);
-                if (!_force && result == MigrationResult.Changed) return false;			
+                if (!_force && result == MigrationResult.Changed) return false;
             }
             return true;
         }
@@ -129,7 +200,7 @@ CREATE TABLE ""public"".MigrationRuns (
             public DateTime LastRun { get; set; }
             public string Filename { get; set; }
             public string MD5 { get; set; }
-            public MigrationResult MigrationResult {get; set;}
+            public MigrationResult MigrationResult { get; set; }
         }
 
         public enum MigrationResult
@@ -148,16 +219,16 @@ CREATE TABLE ""public"".MigrationRuns (
                 crc = Convert.ToBase64String(md5.ComputeHash(Encoding.UTF8.GetBytes(sql)));
             }
             MigrationRun run;
-            using (var conn = new NpgsqlConnection(_connectionString))
-                run = conn.QueryFirstOrDefault<MigrationRun>("select * from public.MigrationRuns where Filename = @migrationFilename", new { migrationFilename = Path.GetFileName(migrationFilename) });
+            using (var conn = CreateConnection())
+                run = conn.QueryFirstOrDefault<MigrationRun>("select * from MigrationRuns where Filename = @migrationFilename", new { migrationFilename = Path.GetFileName(migrationFilename) });
             if (run != null)
             {
                 if (crc == run.MD5) return MigrationResult.Skipped;
-                if (_force) 
+                if (_force)
                 {
                     RunFile(sql);
-                    using (var conn = new NpgsqlConnection(_connectionString))
-                        conn.Execute("update public.MigrationRuns set LastRun = @LastRun, MigrationResult = @MigrationResult, MD5 = @MD5 where Filename = @Filename", new MigrationRun
+                    using (var conn = CreateConnection())
+                        conn.Execute("update MigrationRuns set LastRun = @LastRun, MigrationResult = @MigrationResult, MD5 = @MD5 where Filename = @Filename", new MigrationRun
                         {
                             LastRun = DateTime.UtcNow,
                             Filename = Path.GetFileName(migrationFilename),
@@ -168,8 +239,8 @@ CREATE TABLE ""public"".MigrationRuns (
                 return MigrationResult.Changed;
             }
             RunFile(sql);
-            using (var conn = new NpgsqlConnection(_connectionString))
-                conn.Execute("insert into public.MigrationRuns (LastRun, MigrationResult, MD5, Filename) values (@LastRun, @MigrationResult, @MD5, @Filename)", new MigrationRun
+            using (var conn = CreateConnection())
+                conn.Execute("insert into MigrationRuns (LastRun, MigrationResult, MD5, Filename) values (@LastRun, @MigrationResult, @MD5, @Filename)", new MigrationRun
                 {
                     LastRun = DateTime.UtcNow,
                     Filename = Path.GetFileName(migrationFilename),
@@ -185,9 +256,10 @@ CREATE TABLE ""public"".MigrationRuns (
         {
             foreach (var part in Splitter.Split(sql))
             {
-                using (var conn = new NpgsqlConnection(_connectionString))
+                if (String.IsNullOrEmpty(part)) continue;
+                using (var conn = CreateConnection())
                 {
-                    conn.Open();
+                    //conn.Open();
                     var transaction = conn.BeginTransaction();
                     try
                     {
@@ -196,6 +268,8 @@ CREATE TABLE ""public"".MigrationRuns (
                     catch
                     {
                         transaction.Rollback();
+                        Debug.WriteLine("ERROR HERE");
+                        Debug.WriteLine(part);
                         throw;
                     }
                     transaction.Commit();
