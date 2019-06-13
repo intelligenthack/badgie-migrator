@@ -34,9 +34,10 @@ namespace Badgie.Migrator
 
             if (args.Length == 0)
             {
-                Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-d:(SqlServer|Postgres)] [-f] [-i]
--f runs mutated migrations
--i if needed, installs the db table needed to store state");
+                Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-d:(SqlServer|Postgres)] [-f] [-i] [-d]
+-f                      runs mutated migrations
+-i                      if needed, installs the db table needed to store state
+-d:(SqlServer|Postgres) specifies whether to run against SQL Server or PostgreSQL");
                 Console.Beep();
                 Environment.Exit(-2);
             }
