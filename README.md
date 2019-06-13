@@ -23,7 +23,7 @@ Once the tool is installed you can simply call it like:
 dotnet-badgie-migrator <connection string> [drive:][path][filename] [-f] [-i] [-d]
   -f runs mutated migrations
   -i if needed, installs the db table needed to store state
-  -d (SqlServer|Postgres) specifies whether to run against SQL Server or PostgreSQL
+  -d:(SqlServer|Postgres) specifies whether to run against SQL Server or PostgreSQL
 ```
 
 ## Building
