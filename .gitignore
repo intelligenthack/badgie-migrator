@@ -3,3 +3,5 @@ App/obj/*
 Tests/bin/*
 Tests/obj/*
 /.vs/
+/App/Properties/launchSettings.json
+/App/badgie-migrator.csproj.user
