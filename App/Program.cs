@@ -132,12 +132,15 @@ namespace Badgie.Migrator
             switch (_sqltype)
             {
                 case SqlType.Postgres:
-                    return new NpgsqlConnection(_connectionString);
+                    var pgconn = new NpgsqlConnection(_connectionString);
+                    if (pgconn.State != ConnectionState.Open)
+                        pgconn.Open();
+                    return pgconn;
                 case SqlType.SqlServer:
-                    var conn =  new SqlConnection(_connectionString);
-                    if (conn.State == ConnectionState.Broken || conn.State == ConnectionState.Closed)
-                        conn.Open();
-                    return conn;
+                    var msconn =  new SqlConnection(_connectionString);
+                    if (msconn.State == ConnectionState.Broken || msconn.State == ConnectionState.Closed)
+                        msconn.Open();
+                    return msconn;
                 default:
                     throw new NotSupportedException();
             }
@@ -260,7 +263,6 @@ CREATE TABLE ""public"".MigrationRuns (
                 if (String.IsNullOrEmpty(part)) continue;
                 using (var conn = CreateConnection())
                 {
-                    //conn.Open();
                     var transaction = conn.BeginTransaction();
                     try
                     {
