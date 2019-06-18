@@ -1,4 +1,5 @@
-# badgie-migrator
+![Badgie Migrator](https://i.imgur.com/4pMMXly.png)
+
 A SQL migration tool originally built for Badgie
 
 ## Installation
