@@ -229,17 +229,24 @@ CREATE TABLE ""public"".MigrationRuns (
 
                 using (var conn = CreateConnection())
                 {
-                    var transaction = conn.BeginTransaction();
-                    try
+                    if (_config.UseTransaction)
                     {
-                        conn.Execute(part, transaction: transaction);
+                        var transaction = conn.BeginTransaction();
+                        try
+                        {
+                            conn.Execute(part, transaction: transaction);
+                        }
+                        catch
+                        {
+                            transaction.Rollback();
+                            throw;
+                        }
+                        transaction.Commit();
                     }
-                    catch
+                    else
                     {
-                        transaction.Rollback();
-                        throw;
+                        conn.Execute(part);
                     }
-                    transaction.Commit();
                 }
             }
         }

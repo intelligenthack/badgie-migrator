@@ -10,6 +10,7 @@ namespace Badgie.Migrator
         public bool Install { get; set; } = false;
         public SqlType SqlType { get; set; } = SqlType.Postgres;
         public string Path { get; set; } = ".";
+        public bool UseTransaction { get; set; } = true;
 
         public static Config FromArgs(string[] args)
         {
@@ -20,7 +21,8 @@ namespace Badgie.Migrator
                 Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-d:(SqlServer|Postgres)] [-f] [-i] [-d]
 -f                      runs mutated migrations
 -i                      if needed, installs the db table needed to store state
--d:(SqlServer|Postgres) specifies whether to run against SQL Server or PostgreSQL");
+-d:(SqlServer|Postgres) specifies whether to run against SQL Server or PostgreSQL
+-n                      if needed, doesn't use sql transaction");
                 return null;
             }
 
@@ -48,6 +50,10 @@ namespace Badgie.Migrator
                             }
 
                             _config.SqlType = sqlType;
+                            break;
+
+                        case "-n":
+                            _config.UseTransaction = false;
                             break;
 
                         default:
