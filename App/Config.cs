@@ -18,11 +18,11 @@ namespace Badgie.Migrator
 
             if (args == null || args.Length == 0 || String.IsNullOrWhiteSpace(args[0]))
             {
-                Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-d:(SqlServer|Postgres)] [-f] [-i] [-d]
+                Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-d:(SqlServer|Postgres)] [-f] [-i] [-n]
 -f                      runs mutated migrations
 -i                      if needed, installs the db table needed to store state
 -d:(SqlServer|Postgres) specifies whether to run against SQL Server or PostgreSQL
--n                      if needed, doesn't use sql transaction");
+-n                      avoids wrapping each execution in a transaction");
                 return null;
             }
 
