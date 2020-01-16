@@ -28,6 +28,33 @@ dotnet-badgie-migrator <connection string> [drive:][path][filename] [-f] [-i] [-
   -n avoids wrapping each execution in a transaction 
 ```
 
+Alternatively, if you have many databases to run migrations against you can pass a json configuration file with many configurations:
+
+```
+dotnet-badgie-migrator -json=<configuration filename.json>
+```
+
+Here is a sample file to use as a template:
+
+```
+[
+  {
+    "ConnectionString": "Connection 1",
+    "Force": true,
+    "Install": true,
+    "SqlType": "SqlServer",
+    "UseTransaction": true
+  },                      
+  {
+    "ConnectionString": "Connection 2",
+    "Force": false,
+    "Install": false,
+    "SqlType": "Postgres",
+    "UseTransaction": false
+  }
+]
+```
+
 ## Building
 
 ```
