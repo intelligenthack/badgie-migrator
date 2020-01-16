@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Badgie.Migrator
@@ -12,11 +13,13 @@ namespace Badgie.Migrator
         public string Path { get; set; } = ".";
         public bool UseTransaction { get; set; } = true;
 
+        public List<Config> Configurations { get; set; }
+
         public static Config FromArgs(string[] args)
         {
             var _config = new Config();
 
-            if (args == null || args.Length == 0 || String.IsNullOrWhiteSpace(args[0]))
+            if (args == null || args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
             {
                 Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-d:(SqlServer|Postgres)] [-f] [-i] [-n]
 -f                      runs mutated migrations

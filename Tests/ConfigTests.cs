@@ -81,6 +81,28 @@ namespace Badgie.Migrator.Tests
 
         }
 
+        [TestCase("path", "-i", "-f", "-d:SqlServer", "-n")]
+        [TestCase("path", "-i", "-d:SqlServer", "-n", "-f")]
+        [TestCase("path", "-f", "-i", "-n", "-d:SqlServer")]
+        [TestCase("path", "-d:SqlServer", "-n", "-i", "-f")]
+        [TestCase("path", "-f", "-d:SqlServer", "-i", "-n")]
+        [TestCase("path", "-d:SqlServer", "-n", "-f", "-i")]
+        [TestCase("-i", "-n", "path", "-f", "-d:SqlServer")]
+        [TestCase("-n", "-d:SqlServer", "-i", "path", "-f")]
+        public void FiveParams(string arg1, string arg2, string arg3, string arg4, string arg5)
+        {
+            var args = new string[] { "connection", arg1, arg2, arg3, arg4, arg5 };
+            var config = Config.FromArgs(args);
+            Assert.IsNotNull(config);
+            Assert.AreEqual(args[0], config.ConnectionString);
+            Assert.AreEqual(true, config.Install);
+            Assert.AreEqual(true, config.Force);
+            Assert.AreEqual(SqlType.SqlServer, config.SqlType);
+            Assert.AreEqual("path", config.Path);
+            Assert.AreEqual(false, config.UseTransaction);
+
+        }
+
         [TestCase("path")]
         [TestCase("C:\\foo")]
         [TestCase("C:\\foo\\*.sql")]
