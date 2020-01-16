@@ -53,6 +53,7 @@ Alternative usage: dotnet-badgie-migrator -json=filename
                             ""Force"": true|false,
                             ""Install"": true|false,
                             ""SqlType"": ""SqlServer""|""Postgres"",
+                            ""Path"": ""<path to migrations with wildcards>"",
                             ""UseTransaction"": true|false
                           },                      
                           {
@@ -60,6 +61,7 @@ Alternative usage: dotnet-badgie-migrator -json=filename
                             ""Force"": true|false,
                             ""Install"": true|false,
                             ""SqlType"": ""SqlServer""|""Postgres"",
+                            ""Path"": ""<path to migrations with wildcards>"",
                             ""UseTransaction"": true|false
                           }
                         ]");

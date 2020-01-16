@@ -130,6 +130,7 @@ namespace Badgie.Migrator.Tests
                             ""Force"": true,
                             ""Install"": true,
                             ""SqlType"": ""SqlServer"",
+                            ""Path"": ""Path 1"",
                             ""UseTransaction"": true
                           },                      
                           {
@@ -137,26 +138,28 @@ namespace Badgie.Migrator.Tests
                             ""Force"": false,
                             ""Install"": false,
                             ""SqlType"": ""Postgres"",
+                            ""Path"": ""Path 2"",
                             ""UseTransaction"": false
                           }
                         ]";
             var config = Config.FromJson(json);
 
-            AssertConfig(config, "Connection 1", true, true, SqlType.SqlServer, true);
+            AssertConfig(config, "Connection 1", true, true, SqlType.SqlServer, true, "Path 1");
             Assert.AreEqual(2, config.Configurations.Count);
-            AssertConfig(config.Configurations[0], "Connection 1", true, true, SqlType.SqlServer, true);
-            AssertConfig(config.Configurations[1], "Connection 2", false, false, SqlType.Postgres, false);
+            AssertConfig(config.Configurations[0], "Connection 1", true, true, SqlType.SqlServer, true, "Path 1");
+            AssertConfig(config.Configurations[1], "Connection 2", false, false, SqlType.Postgres, false, "Path 2");
 
         }
 
-        public void AssertConfig(Config config, string connection, bool force, bool install, SqlType sqlType, bool useTransaction)
+        public void AssertConfig(Config config, string connection, bool force, bool install, SqlType sqlType, bool useTransaction, string path)
         {
             Assert.IsNotNull(config);
-            Assert.AreEqual(config.ConnectionString, connection);
-            Assert.AreEqual(config.Force, force);
-            Assert.AreEqual(config.Install, install);
-            Assert.AreEqual(config.SqlType, sqlType);
-            Assert.AreEqual(config.UseTransaction, useTransaction);
+            Assert.AreEqual(connection, config.ConnectionString);
+            Assert.AreEqual(force, config.Force);
+            Assert.AreEqual(install, config.Install);
+            Assert.AreEqual(sqlType, config.SqlType);
+            Assert.AreEqual(useTransaction, config.UseTransaction);
+            Assert.AreEqual(path, config.Path);
         }
 
 

@@ -43,6 +43,7 @@ Here is a sample file to use as a template:
     "Force": true,
     "Install": true,
     "SqlType": "SqlServer",
+    "Path": "Path 1",
     "UseTransaction": true
   },                      
   {
@@ -50,6 +51,7 @@ Here is a sample file to use as a template:
     "Force": false,
     "Install": false,
     "SqlType": "Postgres",
+    "Path": "Path 2",
     "UseTransaction": false
   }
 ]
