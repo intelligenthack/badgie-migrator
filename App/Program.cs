@@ -15,27 +15,50 @@ namespace Badgie.Migrator
 {
     public class Program
     {
-        private static Config _config;
 
         private static void Main(string[] args)
         {
             var time = new Stopwatch();
             time.Start();
 
-            _config = Config.FromArgs(args);
+            var _config = Config.FromArgs(args);
             if (_config == null)
             {
                 Environment.Exit(-2);
             }
 
-            if (!EnsureTableExists())
+            if (_config.Configurations != null && _config.Configurations.Count>1)
             {
-                Error("Database does not have data table installed, did you forget to pass \"-i\"?");
-            }
+                foreach(var config in _config.Configurations)
+                {
+                    var time2 = new Stopwatch();
+                    time2.Start();
+                    Console.WriteLine("Migrating connection: \"{0}\"", config.ConnectionString);
+                    if (!EnsureTableExists(config))
+                    {
+                        Error("Database does not have data table installed, did you forget to pass \"-i\"?");
+                    }
+                    if (!ExecuteFolder(config))
+                    {
+                        Error("Execution error");
+                    }
+                    time2.Stop();
+                    Console.WriteLine("Migrations done in {0:0} ms", time2.Elapsed.TotalMilliseconds);
 
-            if (!ExecuteFolder(_config.Path))
+                }
+
+            }
+            else
             {
-                Error("Execution error");
+                if (!EnsureTableExists(_config))
+                {
+                    Error("Database does not have data table installed, did you forget to pass \"-i\"?");
+                }
+
+                if (!ExecuteFolder(_config))
+                {
+                    Error("Execution error");
+                }
             }
 
             time.Stop();
@@ -48,12 +71,12 @@ namespace Badgie.Migrator
             System.Environment.Exit(-1);
         }
 
-        public static bool EnsureTableExists()
+        public static bool EnsureTableExists(Config config)
         {
             bool installed;
-            using (var x = CreateConnection())
+            using (var x = CreateConnection(config))
             {
-                switch (_config.SqlType)
+                switch (config.SqlType)
                 {
                     case SqlType.Postgres:
                         installed = x.GetSchema("Tables", new string[] { null, "public", "migrationruns", null }).Rows.Count > 0;
@@ -68,11 +91,11 @@ namespace Badgie.Migrator
                 }
             }
 
-            if (!installed && _config.Install)
+            if (!installed && config.Install)
             {
-                using (var x = CreateConnection())
+                using (var x = CreateConnection(config))
                 {
-                    x.Execute(TableCreationStatement());
+                    x.Execute(TableCreationStatement(config));
                 }
 
                 installed = true;
@@ -80,13 +103,13 @@ namespace Badgie.Migrator
             return installed;
         }
 
-        private static DbConnection CreateConnection()
+        private static DbConnection CreateConnection(Config config)
         {
-            switch (_config.SqlType)
+            switch (config.SqlType)
             {
                 case SqlType.Postgres:
                     {
-                        var conn = new NpgsqlConnection(_config.ConnectionString);
+                        var conn = new NpgsqlConnection(config.ConnectionString);
                         if (conn.State != ConnectionState.Open)
                         {
                             conn.Open();
@@ -96,7 +119,7 @@ namespace Badgie.Migrator
                     }
                 case SqlType.SqlServer:
                     {
-                        var conn = new SqlConnection(_config.ConnectionString);
+                        var conn = new SqlConnection(config.ConnectionString);
                         if (conn.State == ConnectionState.Broken || conn.State == ConnectionState.Closed)
                         {
                             conn.Open();
@@ -110,9 +133,9 @@ namespace Badgie.Migrator
         }
 
 
-        private static string TableCreationStatement()
+        private static string TableCreationStatement(Config config)
         {
-            switch (_config.SqlType)
+            switch (config.SqlType)
             {
                 case SqlType.SqlServer:
                     return @"
@@ -140,15 +163,16 @@ CREATE TABLE ""public"".MigrationRuns (
             }
         }
 
-        public static bool ExecuteFolder(string path)
+        public static bool ExecuteFolder(Config config)
         {
+            var path = config.Path;
             var info = new FileInfo(path);
             foreach (var file in Directory.EnumerateFiles(info.Directory.FullName, info.Name).OrderBy(f => f))
             {
                 MigrationResult result;
                 try
                 {
-                    result = ExecuteMigration(file);
+                    result = ExecuteMigration(file, config);
                 }
                 catch (Exception ex)
                 {
@@ -156,7 +180,7 @@ CREATE TABLE ""public"".MigrationRuns (
                     return false;
                 }
                 Console.WriteLine("{0} - {1}", result, file);
-                if (!_config.Force && result == MigrationResult.Changed)
+                if (!config.Force && result == MigrationResult.Changed)
                 {
                     return false;
                 }
@@ -164,7 +188,7 @@ CREATE TABLE ""public"".MigrationRuns (
             return true;
         }
 
-        public static MigrationResult ExecuteMigration(string migrationFilename)
+        public static MigrationResult ExecuteMigration(string migrationFilename, Config config)
         {
             var sql = File.ReadAllText(migrationFilename);
             string crc;
@@ -173,7 +197,7 @@ CREATE TABLE ""public"".MigrationRuns (
                 crc = Convert.ToBase64String(md5.ComputeHash(Encoding.UTF8.GetBytes(sql)));
             }
             MigrationRun run;
-            using (var conn = CreateConnection())
+            using (var conn = CreateConnection(config))
             {
                 run = conn.QueryFirstOrDefault<MigrationRun>("select * from MigrationRuns where Filename = @migrationFilename", new { migrationFilename = Path.GetFileName(migrationFilename) });
             }
@@ -185,10 +209,10 @@ CREATE TABLE ""public"".MigrationRuns (
                     return MigrationResult.Skipped;
                 }
 
-                if (_config.Force)
+                if (config.Force)
                 {
-                    RunFile(sql);
-                    using (var conn = CreateConnection())
+                    RunFile(sql, config);
+                    using (var conn = CreateConnection(config))
                     {
                         conn.Execute("update MigrationRuns set LastRun = @LastRun, MigrationResult = @MigrationResult, MD5 = @MD5 where Filename = @Filename", new MigrationRun
                         {
@@ -201,8 +225,8 @@ CREATE TABLE ""public"".MigrationRuns (
                 }
                 return MigrationResult.Changed;
             }
-            RunFile(sql);
-            using (var conn = CreateConnection())
+            RunFile(sql, config);
+            using (var conn = CreateConnection(config))
             {
                 conn.Execute("insert into MigrationRuns (LastRun, MigrationResult, MD5, Filename) values (@LastRun, @MigrationResult, @MD5, @Filename)", new MigrationRun
                 {
@@ -218,7 +242,7 @@ CREATE TABLE ""public"".MigrationRuns (
 
         private static Regex Splitter = new Regex(@"\nGO\s?\n", RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
-        public static void RunFile(string sql)
+        public static void RunFile(string sql, Config config)
         {
             foreach (var part in Splitter.Split(sql))
             {
@@ -227,9 +251,9 @@ CREATE TABLE ""public"".MigrationRuns (
                     continue;
                 }
 
-                using (var conn = CreateConnection())
+                using (var conn = CreateConnection(config))
                 {
-                    if (_config.UseTransaction)
+                    if (config.UseTransaction)
                     {
                         var transaction = conn.BeginTransaction();
                         try

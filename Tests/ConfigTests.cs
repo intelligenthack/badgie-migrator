@@ -103,6 +103,63 @@ namespace Badgie.Migrator.Tests
 
         }
 
+        [TestCase("-json=foo", "", "foo")]
+        [TestCase("-json=\"foo\"", "", "\"foo\"")]
+        [TestCase("-json=", "foo", "foo")]
+        [TestCase("-json=", "\"foo\"", "\"foo\"")]
+        public void JsonParam(string arg1, string arg2, string expected)
+        {
+            var args = new string[] { arg1, arg2 };
+            
+            string filename="";
+            Config.FileLoader = (x) =>
+              {
+                  filename = x;
+                  return "[]";
+              };
+            var config = Config.FromArgs(args);
+            Assert.AreEqual(expected, filename);
+        }
+
+        [Test]
+        public void ConfigJson()
+        {
+            var json = @"[
+                          {
+                            ""ConnectionString"": ""Connection 1"",
+                            ""Force"": true,
+                            ""Install"": true,
+                            ""SqlType"": ""SqlServer"",
+                            ""UseTransaction"": true
+                          },                      
+                          {
+                            ""ConnectionString"": ""Connection 2"",
+                            ""Force"": false,
+                            ""Install"": false,
+                            ""SqlType"": ""Postgres"",
+                            ""UseTransaction"": false
+                          }
+                        ]";
+            var config = Config.FromJson(json);
+
+            AssertConfig(config, "Connection 1", true, true, SqlType.SqlServer, true);
+            Assert.AreEqual(2, config.Configurations.Count);
+            AssertConfig(config.Configurations[0], "Connection 1", true, true, SqlType.SqlServer, true);
+            AssertConfig(config.Configurations[1], "Connection 2", false, false, SqlType.Postgres, false);
+
+        }
+
+        public void AssertConfig(Config config, string connection, bool force, bool install, SqlType sqlType, bool useTransaction)
+        {
+            Assert.IsNotNull(config);
+            Assert.AreEqual(config.ConnectionString, connection);
+            Assert.AreEqual(config.Force, force);
+            Assert.AreEqual(config.Install, install);
+            Assert.AreEqual(config.SqlType, sqlType);
+            Assert.AreEqual(config.UseTransaction, useTransaction);
+        }
+
+
         [TestCase("path")]
         [TestCase("C:\\foo")]
         [TestCase("C:\\foo\\*.sql")]
