@@ -250,27 +250,34 @@ CREATE TABLE ""public"".MigrationRuns (
                 {
                     continue;
                 }
-
-                using (var conn = CreateConnection(config))
+                try
                 {
-                    if (config.UseTransaction)
+
+                    using (var conn = CreateConnection(config))
                     {
-                        var transaction = conn.BeginTransaction();
-                        try
+                        if (config.UseTransaction)
                         {
-                            conn.Execute(part, transaction: transaction);
+                            var transaction = conn.BeginTransaction();
+                            try
+                            {
+                                conn.Execute(part, transaction: transaction);
+                            }
+                            catch
+                            {
+                                transaction.Rollback();
+                                throw;
+                            }
+                            transaction.Commit();
                         }
-                        catch
+                        else
                         {
-                            transaction.Rollback();
-                            throw;
+                            conn.Execute(part);
                         }
-                        transaction.Commit();
                     }
-                    else
-                    {
-                        conn.Execute(part);
-                    }
+                }
+                catch(Exception ex)
+                {
+                    throw new ApplicationException(String.Format("Error at:\n{0}", part), ex);
                 }
             }
         }
