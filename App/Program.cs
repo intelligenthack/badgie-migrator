@@ -265,12 +265,12 @@ CREATE TABLE ""public"".MigrationRuns (
                     {
                         conn.Execute(part, transaction: transaction);
                     }
-                    catch(Exception ex)
+                    catch
                     {
                         transaction.Rollback();
                         Debug.WriteLine("ERROR HERE");
                         Debug.WriteLine(part);
-                        throw new ApplicationException(String.Format("Problem on:\n{0}", part), ex);
+                        throw;
                     }
                     transaction.Commit();
                 }
