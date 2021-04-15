@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>Badgie.Migrator</RootNamespace>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>dotnet-badgie-migrator</ToolCommandName>
     <PackageId>Badgie.Migrator</PackageId>
     <PackageType>DotNetCliTool</PackageType>
+    <TargetFrameworks>net5.0;netcoreapp3.1</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
     <VersionPrefix>0.2.0</VersionPrefix>
