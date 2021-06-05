@@ -111,7 +111,7 @@ namespace Badgie.Migrator.Tests
         {
             var args = new string[] { arg1, arg2 };
             
-            string filename="";
+            var filename="";
             Config.FileLoader = (x) =>
               {
                   filename = x;
