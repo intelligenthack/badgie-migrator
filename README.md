@@ -1,4 +1,4 @@
-![Badgie Migrator](https://i.imgur.com/4pMMXly.png)
+![Badgie Migrator](https://github.com/intelligenthack/badgie-migrator/blob/master/4pMMXly.png?raw=true)
 
 A SQL migration tool originally built for Badgie
 
