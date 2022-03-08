@@ -176,6 +176,7 @@ CREATE TABLE ""public"".MigrationRuns (
                 }
                 catch (Exception ex)
                 {
+                    Console.Error.WriteLine($"Error - {file}");
                     Console.Error.WriteLine(ex.ToString());
                     return false;
                 }
