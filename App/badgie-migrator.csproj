@@ -6,7 +6,7 @@
     <ToolCommandName>dotnet-badgie-migrator</ToolCommandName>
     <PackageId>Badgie.Migrator</PackageId>
     <PackageType>DotNetCliTool</PackageType>
-    <TargetFrameworks>net5.0;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>net6.0;net5.0;netcoreapp3.1</TargetFrameworks>
     <Authors>Marco Cecconi et al.</Authors>
     <Company>Intelligent Hack</Company>
     <PackageTags>migrations;migrator;sql-server;sqlserver;postgres;pg;postgresql;schema migrations</PackageTags>
