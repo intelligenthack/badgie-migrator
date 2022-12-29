@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using MySql.Data.MySqlClient;
 using Npgsql;
 using System;
 using System.Data;
@@ -27,9 +28,9 @@ namespace Badgie.Migrator
                 Environment.Exit(-2);
             }
 
-            if (_config.Configurations != null && _config.Configurations.Count>1)
+            if (_config.Configurations != null && _config.Configurations.Count > 1)
             {
-                foreach(var config in _config.Configurations)
+                foreach (var config in _config.Configurations)
                 {
                     var time2 = new Stopwatch();
                     time2.Start();
@@ -78,6 +79,10 @@ namespace Badgie.Migrator
             {
                 switch (config.SqlType)
                 {
+                    case SqlType.MySql:
+                        installed = x.GetSchema("Tables", new string[] { null, "", "migration_runs", null }).Rows.Count > 0;
+                        break;
+
                     case SqlType.Postgres:
                         installed = x.GetSchema("Tables", new string[] { null, "public", "migrationruns", null }).Rows.Count > 0;
                         break;
@@ -107,6 +112,16 @@ namespace Badgie.Migrator
         {
             switch (config.SqlType)
             {
+                case SqlType.MySql:
+                    {
+                        var conn = new MySqlConnection(config.ConnectionString);
+                        if (conn.State != ConnectionState.Open)
+                        {
+                            conn.Open();
+                        }
+
+                        return conn;
+                    }
                 case SqlType.Postgres:
                     {
                         var conn = new NpgsqlConnection(config.ConnectionString);
@@ -158,6 +173,16 @@ CREATE TABLE ""public"".MigrationRuns (
     MigrationResult integer NOT NULL,
     CONSTRAINT ""MigrationRuns_Id"" PRIMARY KEY (Id)
 ) WITH (oids = false);";
+                case SqlType.MySql:
+                    return @"
+CREATE TABLE `migration_runs` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `last_run` datetime NOT NULL,
+  `filename` text NOT NULL,
+  `md5` varchar(50) NOT NULL,
+  `migration_result` tinyint NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
                 default:
                     throw new NotSupportedException();
             }
@@ -200,7 +225,14 @@ CREATE TABLE ""public"".MigrationRuns (
             MigrationRun run;
             using (var conn = CreateConnection(config))
             {
-                run = conn.QueryFirstOrDefault<MigrationRun>("select * from MigrationRuns where Filename = @migrationFilename", new { migrationFilename = Path.GetFileName(migrationFilename) });
+                run = conn.QueryFirstOrDefault<MigrationRun>(
+                    config.SqlType switch
+                    {
+                        SqlType.MySql => "select * from `migration_runs` where filename = @migrationFilename",
+                        _ => "select * from MigrationRuns where Filename = @migrationFilename"
+                    },
+                    new { migrationFilename = Path.GetFileName(migrationFilename) }
+                );
             }
 
             if (run != null)
@@ -210,26 +242,33 @@ CREATE TABLE ""public"".MigrationRuns (
                     return MigrationResult.Skipped;
                 }
 
-                if (config.Force)
+                if (!config.Force) return MigrationResult.Changed;
+
+                RunFile(sql, config);
+                using var conn = CreateConnection(config);
+                conn.Execute(config.SqlType switch
                 {
-                    RunFile(sql, config);
-                    using (var conn = CreateConnection(config))
-                    {
-                        conn.Execute("update MigrationRuns set LastRun = @LastRun, MigrationResult = @MigrationResult, MD5 = @MD5 where Filename = @Filename", new MigrationRun
-                        {
-                            LastRun = DateTime.UtcNow,
-                            Filename = Path.GetFileName(migrationFilename),
-                            MD5 = crc,
-                            MigrationResult = MigrationResult.Changed
-                        });
-                    }
-                }
+                    SqlType.MySql => "update `migration_runs` set last_run = @LastRun, migration_result = @MigrationResult, md5 = @MD5 where filename = @Filename",
+                    _ => "update MigrationRuns set LastRun = @LastRun, MigrationResult = @MigrationResult, MD5 = @MD5 where Filename = @Filename"
+
+                }, new MigrationRun
+                {
+                    LastRun = DateTime.UtcNow,
+                    Filename = Path.GetFileName(migrationFilename),
+                    MD5 = crc,
+                    MigrationResult = MigrationResult.Changed
+                });
                 return MigrationResult.Changed;
             }
             RunFile(sql, config);
             using (var conn = CreateConnection(config))
             {
-                conn.Execute("insert into MigrationRuns (LastRun, MigrationResult, MD5, Filename) values (@LastRun, @MigrationResult, @MD5, @Filename)", new MigrationRun
+                conn.Execute(config.SqlType switch
+                {
+                    SqlType.MySql => "insert into `migration_runs` (last_run, migration_result, md5, filename) values (@LastRun, @MigrationResult, @MD5, @Filename)",
+                    _ => "insert into MigrationRuns (LastRun, MigrationResult, MD5, Filename) values (@LastRun, @MigrationResult, @MD5, @Filename)"
+
+                }, new MigrationRun
                 {
                     LastRun = DateTime.UtcNow,
                     Filename = Path.GetFileName(migrationFilename),
@@ -241,7 +280,7 @@ CREATE TABLE ""public"".MigrationRuns (
             return MigrationResult.Run;
         }
 
-        private static Regex Splitter = new Regex(@"\nGO\s?\n", RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase);
+        private static readonly Regex Splitter = new Regex(@"\nGO\s?\n", RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
         public static void RunFile(string sql, Config config)
         {
@@ -252,26 +291,25 @@ CREATE TABLE ""public"".MigrationRuns (
                     continue;
                 }
 
-                using (var conn = CreateConnection(config))
+                using var conn = CreateConnection(config);
+
+                if (config.UseTransaction)
                 {
-                    if (config.UseTransaction)
+                    var transaction = conn.BeginTransaction();
+                    try
                     {
-                        var transaction = conn.BeginTransaction();
-                        try
-                        {
-                            conn.Execute(part, transaction: transaction);
-                        }
-                        catch
-                        {
-                            transaction.Rollback();
-                            throw;
-                        }
-                        transaction.Commit();
+                        conn.Execute(part, transaction: transaction);
                     }
-                    else
+                    catch
                     {
-                        conn.Execute(part);
+                        transaction.Rollback();
+                        throw;
                     }
+                    transaction.Commit();
+                }
+                else
+                {
+                    conn.Execute(part);
                 }
             }
         }

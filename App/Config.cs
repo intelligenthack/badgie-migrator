@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Newtonsoft.Json;
 
-[assembly: InternalsVisibleToAttribute("Badgie.Migrator.Tests")]
+[assembly: InternalsVisibleTo("Badgie.Migrator.Tests")]
 
 namespace Badgie.Migrator
 {
@@ -28,18 +28,18 @@ namespace Badgie.Migrator
             return configurations[0];
         }
 
-        internal static Func<string, string> FileLoader = (path) => System.IO.File.ReadAllText(path);
+        internal static Func<string, string> FileLoader = System.IO.File.ReadAllText;
 
         public static Config FromArgs(string[] args)
         {
-            var _config = new Config();
+            var config = new Config();
 
             if (args == null || args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
             {
-                Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-d:(SqlServer|Postgres)] [-f] [-i] [-n]
+                Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-d:(SqlServer|Postgres|MySql)] [-f] [-i] [-n]
 -f                      runs mutated migrations
 -i                      if needed, installs the db table needed to store state
--d:(SqlServer|Postgres) specifies whether to run against SQL Server or PostgreSQL
+-d:(SqlServer|Postgres) specifies whether to run against SQL Server, PostgreSQL or MySql
 -n                      avoids wrapping each execution in a transaction
 
 Alternative usage: dotnet-badgie-migrator -json=filename
@@ -52,7 +52,7 @@ Alternative usage: dotnet-badgie-migrator -json=filename
                             ""ConnectionString"": <connection string>,
                             ""Force"": true|false,
                             ""Install"": true|false,
-                            ""SqlType"": ""SqlServer""|""Postgres"",
+                            ""SqlType"": ""SqlServer""|""Postgres""|""MySql"",
                             ""Path"": ""<path to migrations with wildcards>"",
                             ""UseTransaction"": true|false
                           },                      
@@ -60,7 +60,7 @@ Alternative usage: dotnet-badgie-migrator -json=filename
                             ""ConnectionString"": <connection string>,
                             ""Force"": true|false,
                             ""Install"": true|false,
-                            ""SqlType"": ""SqlServer""|""Postgres"",
+                            ""SqlType"": ""SqlServer""|""Postgres""|""MySql"",
                             ""Path"": ""<path to migrations with wildcards>"",
                             ""UseTransaction"": true|false
                           }
@@ -71,46 +71,45 @@ Alternative usage: dotnet-badgie-migrator -json=filename
             var big = string.Concat(args);
             if (big.StartsWith("-json="))
             {
-                return FromJson(FileLoader(big.Substring("-json=".Length)));
+                return FromJson(FileLoader(big["-json=".Length..]));
             }
 
-            _config.ConnectionString = args.First();
+            config.ConnectionString = args.First();
 
-            if (args.Length > 1)
+            if (args.Length <= 1) return config;
+
+            foreach (var str in args.Skip(1))
             {
-                foreach (var str in args.Skip(1))
+                switch (str[..2])
                 {
-                    switch (str.Substring(0, 2))
-                    {
-                        case "-f":
-                            _config.Force = true;
-                            break;
+                    case "-f":
+                        config.Force = true;
+                        break;
 
-                        case "-i":
-                            _config.Install = true;
-                            break;
+                    case "-i":
+                        config.Install = true;
+                        break;
 
-                        case "-d":
-                            if (!str.StartsWith("-d:") ||
-                                !Enum.TryParse<SqlType>(str.Substring(3), out var sqlType))
-                            {
-                                return null;
-                            }
+                    case "-d":
+                        if (!str.StartsWith("-d:") ||
+                            !Enum.TryParse<SqlType>(str[3..], out var sqlType))
+                        {
+                            return null;
+                        }
 
-                            _config.SqlType = sqlType;
-                            break;
+                        config.SqlType = sqlType;
+                        break;
 
-                        case "-n":
-                            _config.UseTransaction = false;
-                            break;
+                    case "-n":
+                        config.UseTransaction = false;
+                        break;
 
-                        default:
-                            _config.Path = str;
-                            break;
-                    }
+                    default:
+                        config.Path = str;
+                        break;
                 }
             }
-            return _config;
+            return config;
         }
     }
 }

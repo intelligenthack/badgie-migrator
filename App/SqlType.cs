@@ -3,6 +3,7 @@
     public enum SqlType
     {
         Postgres,
-        SqlServer
+        SqlServer,
+        MySql
     }
 }

@@ -1,43 +1,45 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>Badgie.Migrator</RootNamespace>
-    <PackAsTool>true</PackAsTool>
-    <ToolCommandName>dotnet-badgie-migrator</ToolCommandName>
-    <PackageId>Badgie.Migrator</PackageId>
-    <PackageType>DotNetCliTool</PackageType>
-    <TargetFrameworks>net5.0;netcoreapp3.1</TargetFrameworks>
-    <Authors>Marco Cecconi et al.</Authors>
-    <Company>Intelligent Hack</Company>
-    <PackageTags>migrations;migrator;sql-server;sqlserver;postgres;pg;postgresql;schema migrations</PackageTags>
-    <Description>A SQL migration tool originally built for Badgie. Use it to express database changes in a series of sql files which are executed only once.</Description>
-    <PackageProjectUrl>https://github.com/intelligenthack/badgie-migrator</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/intelligenthack/badgie-migrator.git</RepositoryUrl>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-  </PropertyGroup>
-  <PropertyGroup>
-      <CopyrightStartYear>2019</CopyrightStartYear>
-      <CopyrightEndYear>$([System.DateTime]::Now.Year)</CopyrightEndYear>
-      <Copyright Condition="$(CopyrightStartYear) == $(CopyrightEndYear)">Copyright $(CopyrightStartYear) $(Company)</Copyright>
-      <Copyright Condition="$(CopyrightStartYear) != $(CopyrightEndYear)">Copyright $(CopyrightStartYear)-$(CopyrightEndYear) $(Company)</Copyright>
-      <PackageIcon>icon.png</PackageIcon>
-  </PropertyGroup>
-  
-  <PropertyGroup>
-    <VersionPrefix>1.0.1</VersionPrefix>
-    <VersionPrefix Condition=" '$(BUILD_BUILDID)' != '' ">$(VersionPrefix).$(BUILD_BUILDID)</VersionPrefix>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Dapper" Version="1.60.9" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-    <PackageReference Include="Npgsql" Version="4.0.7" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="icon.png">
-      <Pack>True</Pack>
-      <PackagePath></PackagePath>
-    </None>
-  </ItemGroup>
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<RootNamespace>Badgie.Migrator</RootNamespace>
+		<PackAsTool>true</PackAsTool>
+		<ToolCommandName>dotnet-badgie-migrator</ToolCommandName>
+		<PackageId>Badgie.Migrator</PackageId>
+		<PackageType>DotNetCliTool</PackageType>
+		<TargetFrameworks>net6.0;net7.0</TargetFrameworks>
+		<Authors>Marco Cecconi et al.</Authors>
+		<Company>Intelligent Hack</Company>
+		<PackageTags>migrations;migrator;sql-server;sqlserver;postgres;pg;postgresql;schema migrations;mysql</PackageTags>
+		<Description>A SQL migration tool originally built for Badgie. Use it to express database changes in a series of sql files which are executed only once.</Description>
+		<PackageProjectUrl>https://github.com/intelligenthack/badgie-migrator</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/intelligenthack/badgie-migrator.git</RepositoryUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+	</PropertyGroup>
+	<PropertyGroup>
+		<CopyrightStartYear>2019</CopyrightStartYear>
+		<CopyrightEndYear>$([System.DateTime]::Now.Year)</CopyrightEndYear>
+		<Copyright Condition="$(CopyrightStartYear) == $(CopyrightEndYear)">Copyright $(CopyrightStartYear) $(Company)</Copyright>
+		<Copyright Condition="$(CopyrightStartYear) != $(CopyrightEndYear)">Copyright $(CopyrightStartYear)-$(CopyrightEndYear) $(Company)</Copyright>
+		<PackageIcon>icon.png</PackageIcon>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<VersionPrefix>1.1.0</VersionPrefix>
+		<VersionPrefix Condition=" '$(BUILD_BUILDID)' != '' ">$(VersionPrefix).$(BUILD_BUILDID)</VersionPrefix>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageReleaseNotes>Added support for MySQL (feedback welcome!)</PackageReleaseNotes>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Dapper" Version="1.60.9" />
+		<PackageReference Include="MySql.Data" Version="8.0.31" />
+		<PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+		<PackageReference Include="Npgsql" Version="4.0.7" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="icon.png">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+	</ItemGroup>
 </Project>

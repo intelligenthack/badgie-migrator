@@ -1,5 +1,4 @@
 using NUnit.Framework;
-using Badgie.Migrator;
 
 namespace Badgie.Migrator.Tests
 {
@@ -110,8 +109,8 @@ namespace Badgie.Migrator.Tests
         public void JsonParam(string arg1, string arg2, string expected)
         {
             var args = new string[] { arg1, arg2 };
-            
-            var filename="";
+
+            var filename = "";
             Config.FileLoader = (x) =>
               {
                   filename = x;
@@ -140,14 +139,23 @@ namespace Badgie.Migrator.Tests
                             ""SqlType"": ""Postgres"",
                             ""Path"": ""Path 2"",
                             ""UseTransaction"": false
+                          },                      
+                          {
+                            ""ConnectionString"": ""Connection 3"",
+                            ""Force"": false,
+                            ""Install"": false,
+                            ""SqlType"": ""MySql"",
+                            ""Path"": ""Path 3"",
+                            ""UseTransaction"": false
                           }
                         ]";
             var config = Config.FromJson(json);
 
             AssertConfig(config, "Connection 1", true, true, SqlType.SqlServer, true, "Path 1");
-            Assert.AreEqual(2, config.Configurations.Count);
+            Assert.AreEqual(3, config.Configurations.Count);
             AssertConfig(config.Configurations[0], "Connection 1", true, true, SqlType.SqlServer, true, "Path 1");
             AssertConfig(config.Configurations[1], "Connection 2", false, false, SqlType.Postgres, false, "Path 2");
+            AssertConfig(config.Configurations[2], "Connection 3", false, false, SqlType.MySql, false, "Path 3");
 
         }
 
