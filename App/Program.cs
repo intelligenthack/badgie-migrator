@@ -207,11 +207,11 @@ CREATE TABLE `migration_runs` (
         {
             var path = config.Path;
             var info = new FileInfo(path);
-            var files = Directory.EnumerateFiles(info.Directory.FullName, info.Name).OrderBy(f => f);
+            var files = Directory.EnumerateFiles(info.Directory.FullName, info.Name).OrderBy(f => f).ToList();
 
             if (config.Verbose) 
             {
-                Console.WriteLine("Info: Migrations found (in order):");
+                Console.WriteLine("Info: migrations found (in order):");
                 foreach (var file in files)
                     Console.WriteLine("Info: {0}", file);
             }
@@ -219,6 +219,7 @@ CREATE TABLE `migration_runs` (
             foreach (var file in files)
             {
                 MigrationResult result;
+                if (config.Verbose) Console.WriteLine("Info: handling {0}...", file);
                 try
                 {
                     result = ExecuteMigration(file, config);
@@ -226,7 +227,8 @@ CREATE TABLE `migration_runs` (
                 catch (Exception ex)
                 {
                     Console.Error.WriteLine($"Error - {file}");
-                    Console.Error.WriteLine(ex.ToString());
+                    if (config.StackTraces) Console.Error.WriteLine(ex.ToString());
+                    else Console.Error.WriteLine(ex.Message);
                     return false;
                 }
                 Console.WriteLine("{0} - {1}", result, file);
@@ -234,6 +236,7 @@ CREATE TABLE `migration_runs` (
                 {
                     return false;
                 }
+                if (config.Verbose) Console.WriteLine("Info: ...done!");
             }
             return true;
         }
@@ -245,6 +248,7 @@ CREATE TABLE `migration_runs` (
             using (var md5 = MD5.Create())
             {
                 crc = Convert.ToBase64String(md5.ComputeHash(Encoding.UTF8.GetBytes(sql)));
+                if (config.Verbose) Console.WriteLine("Info: file MD5: {0}", crc);
             }
             MigrationRun run;
             using (var conn = CreateConnection(config))
@@ -261,12 +265,16 @@ CREATE TABLE `migration_runs` (
 
             if (run != null)
             {
+                if (config.Verbose) Console.WriteLine("Info: found run in table!");
                 if (crc == run.MD5)
                 {
+                    if (config.Verbose) Console.WriteLine("Info: same MD5, skipping");
                     return MigrationResult.Skipped;
                 }
 
                 if (!config.Force) return MigrationResult.Changed;
+
+                if (config.Verbose) Console.WriteLine("Info: forced run");
 
                 RunFile(sql, config);
                 using var conn = CreateConnection(config);
@@ -282,11 +290,14 @@ CREATE TABLE `migration_runs` (
                     MD5 = crc,
                     MigrationResult = MigrationResult.Changed
                 });
+                if (config.Verbose) Console.WriteLine("Info: updating migration table");
                 return MigrationResult.Changed;
             }
+            if (config.Verbose) Console.WriteLine("Info: fresh migration!");
             RunFile(sql, config);
             using (var conn = CreateConnection(config))
             {
+                if (config.Verbose) Console.WriteLine("Info: saving in migration table");
                 conn.Execute(config.SqlType switch
                 {
                     SqlType.MySql => "insert into `migration_runs` (last_run, migration_result, md5, filename) values (@LastRun, @MigrationResult, @MD5, @Filename)",
@@ -308,10 +319,18 @@ CREATE TABLE `migration_runs` (
 
         public static void RunFile(string sql, Config config)
         {
-            foreach (var part in Splitter.Split(sql))
+            var parts = Splitter.Split(sql);
+            if (config.Verbose) Console.WriteLine("Info: found {0} part(s)", parts.Length);
+
+            var pnum = 0;
+            foreach (var part in parts)
             {
+                pnum++;
+                if (config.Verbose) Console.WriteLine("Info: running part {0}", pnum);
+
                 if (string.IsNullOrEmpty(part))
                 {
+                    if (config.Verbose) Console.WriteLine("Info: part is empty");
                     continue;
                 }
 
@@ -319,6 +338,7 @@ CREATE TABLE `migration_runs` (
 
                 if (config.UseTransaction)
                 {
+                    if (config.Verbose) Console.WriteLine("Info: executing with transaction...");
                     var transaction = conn.BeginTransaction();
                     try
                     {
@@ -326,14 +346,18 @@ CREATE TABLE `migration_runs` (
                     }
                     catch
                     {
+                        if (config.Verbose) Console.WriteLine("Info: Error, rolling back!");
                         transaction.Rollback();
                         throw;
                     }
+                    if (config.Verbose) Console.WriteLine("Info: ...done!");
                     transaction.Commit();
                 }
                 else
                 {
+                    if (config.Verbose) Console.WriteLine("Info: executing without transaction...");
                     conn.Execute(part);
+                    if (config.Verbose) Console.WriteLine("Info: ...done!");
                 }
             }
         }

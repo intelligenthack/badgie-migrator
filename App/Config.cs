@@ -17,6 +17,7 @@ namespace Badgie.Migrator
         public string Path { get; set; } = ".";
         public bool UseTransaction { get; set; } = true;
         public bool Verbose { get; set; } = false;
+        public bool StackTraces {get; set; } = true;
 
         public List<Config> Configurations { get; set; }
 
@@ -37,12 +38,13 @@ namespace Badgie.Migrator
 
             if (args == null || args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
             {
-                Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-d:(SqlServer|Postgres|MySql)] [-f] [-i] [-n]
+                Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-d:(SqlServer|Postgres|MySql)] [-f] [-i] [-n] [-V] [--no-stack-trce]
 -f                      runs mutated migrations
 -i                      if needed, installs the db table needed to store state
 -d:(SqlServer|Postgres) specifies whether to run against SQL Server, PostgreSQL or MySql
 -n                      avoids wrapping each execution in a transaction
--V                      Verbose mode: executes with more output
+-V                      Verbose mode: executes with tracing
+--no-stack-trace        Omit the (mostly useless) stack traces
 
 Alternative usage: dotnet-badgie-migrator -json=filename
 -json                   path to a json file that contains a array of configurations 
@@ -91,6 +93,17 @@ Alternative usage: dotnet-badgie-migrator -json=filename
                     case "-V":
                         config.Verbose = true;
                         break;
+
+                    case "--":
+                    {
+                        switch (str[2..])
+                        {
+                            case "no-stack-trace":
+                                config.StackTraces = false;
+                                break;
+                        }
+                        break;
+                    }
 
                     case "-i":
                         config.Install = true;

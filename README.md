@@ -51,12 +51,13 @@ dotnet tool install -g Badgie.Migrator
 Once the tool is installed you can simply call it like:
 
 ```
-dotnet-badgie-migrator <connection string> [drive:][path][filename pattern] [-f] [-i] [-d] [-n] [-V]
+dotnet-badgie-migrator <connection string> [drive:][path][filename pattern] [-f] [-i] [-d] [-n] [-V] [--no-stack-trace]
   -f runs mutated migrations
   -i if needed, installs the db table needed to store state
   -d:(SqlServer|Postgres|MySql) specifies whether to run against SQL Server, PostgreSQL or MySql
   -n avoids wrapping each execution in a transaction 
   -V verbose mode for debugging
+  --no-stack-trace omits the (mostly useless) stack traces
 ```
 
 Alternatively, if you have many databases to run migrations against you can pass a json configuration file with many configurations:

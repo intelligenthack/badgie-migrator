@@ -41,6 +41,8 @@ namespace Badgie.Migrator.Tests
             var config = Config.FromArgs(args);
             Assert.IsNotNull(config);
             Assert.AreEqual(arg, config.ConnectionString);
+            Assert.AreEqual(false, config.Verbose);
+            Assert.AreEqual(true, config.StackTraces);
         }
 
         [TestCase("path", "-i", "-f", "-d:SqlServer")]
@@ -77,7 +79,8 @@ namespace Badgie.Migrator.Tests
             Assert.AreEqual(true, config.Force);
             Assert.AreEqual(SqlType.SqlServer, config.SqlType);
             Assert.AreEqual("path", config.Path);
-
+            Assert.AreEqual(false, config.Verbose);
+            Assert.AreEqual(true, config.StackTraces);
         }
 
         [TestCase("path", "-i", "-f", "-d:SqlServer", "-n")]
@@ -99,7 +102,50 @@ namespace Badgie.Migrator.Tests
             Assert.AreEqual(SqlType.SqlServer, config.SqlType);
             Assert.AreEqual("path", config.Path);
             Assert.AreEqual(false, config.UseTransaction);
+            Assert.AreEqual(false, config.Verbose);
+            Assert.AreEqual(true, config.StackTraces);
+        }
 
+        [TestCase("path", "-i", "-f", "-d:SqlServer", "-n", "-V")]
+        [TestCase("path", "-i", "-d:SqlServer", "-n", "-V", "-f")]
+        [TestCase("path", "-f", "-i", "-V", "-n", "-d:SqlServer")]
+        [TestCase("path", "-d:SqlServer", "-V", "-n", "-i", "-f")]
+        [TestCase("-V", "path", "-f", "-d:SqlServer", "-i", "-n")]
+        [TestCase("path", "-d:SqlServer", "-V", "-n", "-f", "-i")]
+        public void SixParams(string arg1, string arg2, string arg3, string arg4, string arg5, string arg6)
+        {
+            var args = new string[] { "connection", arg1, arg2, arg3, arg4, arg5, arg6 };
+            var config = Config.FromArgs(args);
+            Assert.IsNotNull(config);
+            Assert.AreEqual(args[0], config.ConnectionString);
+            Assert.AreEqual(true, config.Install);
+            Assert.AreEqual(true, config.Force);
+            Assert.AreEqual(SqlType.SqlServer, config.SqlType);
+            Assert.AreEqual("path", config.Path);
+            Assert.AreEqual(false, config.UseTransaction);
+            Assert.AreEqual(true, config.Verbose);
+            Assert.AreEqual(true, config.StackTraces);
+        }
+
+        [TestCase("path", "-i", "--no-stack-trace", "-f", "-d:SqlServer", "-n", "-V")]
+        [TestCase("path", "-i", "-d:SqlServer", "--no-stack-trace", "-n", "-V", "-f")]
+        [TestCase("path", "-f", "-i", "-V", "-n", "-d:SqlServer", "--no-stack-trace")]
+        [TestCase("path", "-d:SqlServer", "--no-stack-trace", "-V", "-n", "-i", "-f")]
+        [TestCase("-V", "--no-stack-trace", "path", "-f", "-d:SqlServer", "-i", "-n")]
+        [TestCase("path", "-d:SqlServer", "--no-stack-trace", "-V", "-n", "-f", "-i")]
+        public void SevenParams(string arg1, string arg2, string arg3, string arg4, string arg5, string arg6, string arg7)
+        {
+            var args = new string[] { "connection", arg1, arg2, arg3, arg4, arg5, arg6, arg7 };
+            var config = Config.FromArgs(args);
+            Assert.IsNotNull(config);
+            Assert.AreEqual(args[0], config.ConnectionString);
+            Assert.AreEqual(true, config.Install);
+            Assert.AreEqual(true, config.Force);
+            Assert.AreEqual(SqlType.SqlServer, config.SqlType);
+            Assert.AreEqual("path", config.Path);
+            Assert.AreEqual(false, config.UseTransaction);
+            Assert.AreEqual(true, config.Verbose);
+            Assert.AreEqual(false, config.StackTraces);
         }
 
         [TestCase("-json=foo", "", "foo")]
