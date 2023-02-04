@@ -30,19 +30,24 @@ namespace Badgie.Migrator
 
             if (_config.Configurations != null && _config.Configurations.Count > 1)
             {
+                if (_config.Verbose) Console.WriteLine("Info: {0} configurations found.", _config.Configurations.Count);
                 foreach (var config in _config.Configurations)
                 {
                     var time2 = new Stopwatch();
                     time2.Start();
                     Console.WriteLine("Migrating connection: \"{0}\"", config.ConnectionString);
+                    if (_config.Verbose) Console.WriteLine("Info: ensuring configuration table exists...");
                     if (!EnsureTableExists(config))
                     {
                         Error("Database does not have data table installed, did you forget to pass \"-i\"?");
                     }
+                    if (_config.Verbose) Console.WriteLine("Info: ...done!");
+                    if (_config.Verbose) Console.WriteLine("Info: migrating folder...");
                     if (!ExecuteFolder(config))
                     {
                         Error("Execution error");
                     }
+                    if (_config.Verbose) Console.WriteLine("Info: ...done!");
                     time2.Stop();
                     Console.WriteLine("Migrations done in {0:0} ms", time2.Elapsed.TotalMilliseconds);
 
@@ -51,15 +56,19 @@ namespace Badgie.Migrator
             }
             else
             {
+                if (_config.Verbose) Console.WriteLine("Info: ensuring configuration table exists...");
                 if (!EnsureTableExists(_config))
                 {
                     Error("Database does not have data table installed, did you forget to pass \"-i\"?");
                 }
+                if (_config.Verbose) Console.WriteLine("Info: ...done!");
 
+                if (_config.Verbose) Console.WriteLine("Info: migrating folder...");
                 if (!ExecuteFolder(_config))
                 {
                     Error("Execution error");
                 }
+                if (_config.Verbose) Console.WriteLine("Info: ...done!");
             }
 
             time.Stop();
@@ -80,14 +89,17 @@ namespace Badgie.Migrator
                 switch (config.SqlType)
                 {
                     case SqlType.MySql:
+                        if (config.Verbose) Console.WriteLine("Info: verifying table on MySQL");
                         installed = x.GetSchema("Tables", new string[] { null, "", "migration_runs", null }).Rows.Count > 0;
                         break;
 
                     case SqlType.Postgres:
+                        if (config.Verbose) Console.WriteLine("Info: verifying table on Postgres");
                         installed = x.GetSchema("Tables", new string[] { null, "public", "migrationruns", null }).Rows.Count > 0;
                         break;
 
                     case SqlType.SqlServer:
+                        if (config.Verbose) Console.WriteLine("Info: verifying table on SQL Server");
                         installed = x.GetSchema("Tables", new string[] { null, "dbo", "MigrationRuns", null }).Rows.Count > 0;
                         break;
 
@@ -95,13 +107,16 @@ namespace Badgie.Migrator
                         throw new NotSupportedException();
                 }
             }
+            if (config.Verbose) Console.WriteLine(installed ? "Info: table found!" : "Info: table not found!");
 
             if (!installed && config.Install)
             {
+                if (config.Verbose) Console.WriteLine("Info: attempting to create migrations table...");
                 using (var x = CreateConnection(config))
                 {
                     x.Execute(TableCreationStatement(config));
                 }
+                if (config.Verbose) Console.WriteLine("Info: ...done!");
 
                 installed = true;
             }
@@ -192,7 +207,16 @@ CREATE TABLE `migration_runs` (
         {
             var path = config.Path;
             var info = new FileInfo(path);
-            foreach (var file in Directory.EnumerateFiles(info.Directory.FullName, info.Name).OrderBy(f => f))
+            var files = Directory.EnumerateFiles(info.Directory.FullName, info.Name).OrderBy(f => f);
+
+            if (config.Verbose) 
+            {
+                Console.WriteLine("Info: Migrations found (in order):");
+                foreach (var file in files)
+                    Console.WriteLine("Info: {0}", file);
+            }
+
+            foreach (var file in files)
             {
                 MigrationResult result;
                 try

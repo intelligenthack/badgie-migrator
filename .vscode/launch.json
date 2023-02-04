@@ -10,8 +10,8 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/App/bin/Debug/netcoreapp2.2/badgie-migrator.dll",
-            "args": [],
+            "program": "${workspaceFolder}/App/bin/Debug/net7.0/badgie-migrator.dll",
+            "args": ["Server=127.0.0.1;Database=postop2;Uid=postop2_dbo;", "/home/sklivvz/src/postop/postop-api/migrations/*.sql"],
             "cwd": "${workspaceFolder}/App",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
             "console": "internalConsole",

@@ -16,6 +16,7 @@ namespace Badgie.Migrator
         public SqlType SqlType { get; set; } = SqlType.Postgres;
         public string Path { get; set; } = ".";
         public bool UseTransaction { get; set; } = true;
+        public bool Verbose { get; set; } = false;
 
         public List<Config> Configurations { get; set; }
 
@@ -41,6 +42,7 @@ namespace Badgie.Migrator
 -i                      if needed, installs the db table needed to store state
 -d:(SqlServer|Postgres) specifies whether to run against SQL Server, PostgreSQL or MySql
 -n                      avoids wrapping each execution in a transaction
+-V                      Verbose mode: executes with more output
 
 Alternative usage: dotnet-badgie-migrator -json=filename
 -json                   path to a json file that contains a array of configurations 
@@ -84,6 +86,10 @@ Alternative usage: dotnet-badgie-migrator -json=filename
                 {
                     case "-f":
                         config.Force = true;
+                        break;
+
+                    case "-V":
+                        config.Verbose = true;
                         break;
 
                     case "-i":
