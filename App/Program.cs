@@ -209,7 +209,7 @@ CREATE TABLE `migration_runs` (
             var info = new FileInfo(path);
             var files = Directory.EnumerateFiles(info.Directory.FullName, info.Name).OrderBy(f => f).ToList();
 
-            if (config.Verbose) 
+            if (config.Verbose)
             {
                 Console.WriteLine("Info: migrations found (in order):");
                 foreach (var file in files)
@@ -316,9 +316,29 @@ CREATE TABLE `migration_runs` (
         }
 
         private static readonly Regex Splitter = new Regex(@"\nGO\s?\n", RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase);
+        private static readonly string InvalidCharFallback = ((DecoderReplacementFallback)Encoding.UTF8.DecoderFallback).DefaultString;
 
         public static void RunFile(string sql, Config config)
         {
+            if (config.StrictEncoding)
+            {
+                var firstInvalidCharIndex = sql.IndexOf(InvalidCharFallback);
+                if (firstInvalidCharIndex >= 0)
+                {
+                    var lineSeparators = new[] { '\n', '\r' };
+                    var startOfLineIndex = sql.LastIndexOfAny(lineSeparators, firstInvalidCharIndex) + 1;
+                    var endOfLineIndex = sql.IndexOfAny(lineSeparators, firstInvalidCharIndex);
+                    if (endOfLineIndex < 0)
+                    {
+                        endOfLineIndex = sql.Length;
+                    }
+
+                    var line = sql.Substring(startOfLineIndex, endOfLineIndex - startOfLineIndex);
+
+                    throw new InvalidDataException($"Found an invalid character at offset {firstInvalidCharIndex}:\n    | {line}\n    | {"^".PadLeft(firstInvalidCharIndex - startOfLineIndex + 1)}\nPlease make sure that the encoding of the file is correct (UTF-8 is recommended).\n");
+                }
+            }
+
             var parts = Splitter.Split(sql);
             if (config.Verbose) Console.WriteLine("Info: found {0} part(s)", parts.Length);
 

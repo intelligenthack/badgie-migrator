@@ -81,6 +81,7 @@ namespace Badgie.Migrator.Tests
             Assert.AreEqual("path", config.Path);
             Assert.AreEqual(false, config.Verbose);
             Assert.AreEqual(true, config.StackTraces);
+            Assert.AreEqual(false, config.StrictEncoding);
         }
 
         [TestCase("path", "-i", "-f", "-d:SqlServer", "-n")]
@@ -104,6 +105,7 @@ namespace Badgie.Migrator.Tests
             Assert.AreEqual(false, config.UseTransaction);
             Assert.AreEqual(false, config.Verbose);
             Assert.AreEqual(true, config.StackTraces);
+            Assert.AreEqual(false, config.StrictEncoding);
         }
 
         [TestCase("path", "-i", "-f", "-d:SqlServer", "-n", "-V")]
@@ -125,6 +127,7 @@ namespace Badgie.Migrator.Tests
             Assert.AreEqual(false, config.UseTransaction);
             Assert.AreEqual(true, config.Verbose);
             Assert.AreEqual(true, config.StackTraces);
+            Assert.AreEqual(false, config.StrictEncoding);
         }
 
         [TestCase("path", "-i", "--no-stack-trace", "-f", "-d:SqlServer", "-n", "-V")]
@@ -146,6 +149,29 @@ namespace Badgie.Migrator.Tests
             Assert.AreEqual(false, config.UseTransaction);
             Assert.AreEqual(true, config.Verbose);
             Assert.AreEqual(false, config.StackTraces);
+            Assert.AreEqual(false, config.StrictEncoding);
+        }
+
+        [TestCase("path", "-i", "--no-stack-trace", "-f", "-d:SqlServer", "-n", "-V", "--strict-encoding")]
+        [TestCase("path", "-i", "-d:SqlServer", "--no-stack-trace", "-n", "-V", "--strict-encoding", "-f")]
+        [TestCase("path", "-f", "-i", "-V", "-n", "--strict-encoding", "-d:SqlServer", "--no-stack-trace")]
+        [TestCase("path", "-d:SqlServer", "--strict-encoding", "--no-stack-trace", "-V", "-n", "-i", "-f")]
+        [TestCase("-V", "--strict-encoding", "--no-stack-trace", "path", "-f", "-d:SqlServer", "-i", "-n")]
+        [TestCase("path", "-d:SqlServer", "--no-stack-trace", "-V", "--strict-encoding", "-n", "-f", "-i")]
+        public void EightParams(string arg1, string arg2, string arg3, string arg4, string arg5, string arg6, string arg7, string arg8)
+        {
+            var args = new string[] { "connection", arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 };
+            var config = Config.FromArgs(args);
+            Assert.IsNotNull(config);
+            Assert.AreEqual(args[0], config.ConnectionString);
+            Assert.AreEqual(true, config.Install);
+            Assert.AreEqual(true, config.Force);
+            Assert.AreEqual(SqlType.SqlServer, config.SqlType);
+            Assert.AreEqual("path", config.Path);
+            Assert.AreEqual(false, config.UseTransaction);
+            Assert.AreEqual(true, config.Verbose);
+            Assert.AreEqual(false, config.StackTraces);
+            Assert.AreEqual(true, config.StrictEncoding);
         }
 
         [TestCase("-json=foo", "", "foo")]
@@ -176,7 +202,9 @@ namespace Badgie.Migrator.Tests
                             ""Install"": true,
                             ""SqlType"": ""SqlServer"",
                             ""Path"": ""Path 1"",
-                            ""UseTransaction"": true
+                            ""UseTransaction"": true,
+                            ""StackTraces"": true,
+                            ""StrictEncoding"": true
                           },                      
                           {
                             ""ConnectionString"": ""Connection 2"",
@@ -184,7 +212,9 @@ namespace Badgie.Migrator.Tests
                             ""Install"": false,
                             ""SqlType"": ""Postgres"",
                             ""Path"": ""Path 2"",
-                            ""UseTransaction"": false
+                            ""UseTransaction"": false,
+                            ""StackTraces"": false,
+                            ""StrictEncoding"": false
                           },                      
                           {
                             ""ConnectionString"": ""Connection 3"",
@@ -192,20 +222,49 @@ namespace Badgie.Migrator.Tests
                             ""Install"": false,
                             ""SqlType"": ""MySql"",
                             ""Path"": ""Path 3"",
-                            ""UseTransaction"": false
+                            ""UseTransaction"": false,
+                            ""StackTraces"": true,
+                            ""StrictEncoding"": false
                           }
                         ]";
             var config = Config.FromJson(json);
 
-            AssertConfig(config, "Connection 1", true, true, SqlType.SqlServer, true, "Path 1");
+            AssertConfig(config, "Connection 1", true, true, SqlType.SqlServer, true, true, true, "Path 1");
             Assert.AreEqual(3, config.Configurations.Count);
-            AssertConfig(config.Configurations[0], "Connection 1", true, true, SqlType.SqlServer, true, "Path 1");
-            AssertConfig(config.Configurations[1], "Connection 2", false, false, SqlType.Postgres, false, "Path 2");
-            AssertConfig(config.Configurations[2], "Connection 3", false, false, SqlType.MySql, false, "Path 3");
+
+            AssertConfig(config.Configurations[0],
+                connection: "Connection 1",
+                force: true,
+                install: true,
+                sqlType: SqlType.SqlServer,
+                useTransaction: true,
+                stackTraces: true,
+                strictEncoding: true,
+                path: "Path 1");
+
+            AssertConfig(config.Configurations[1],
+                connection: "Connection 2",
+                force: false,
+                install: false,
+                sqlType: SqlType.Postgres,
+                useTransaction: false,
+                stackTraces: false,
+                strictEncoding: false,
+                path: "Path 2");
+
+            AssertConfig(config.Configurations[2],
+                connection: "Connection 3",
+                force: false,
+                install: false,
+                sqlType: SqlType.MySql,
+                useTransaction: false,
+                stackTraces: true,
+                strictEncoding: false,
+                path: "Path 3");
 
         }
 
-        public void AssertConfig(Config config, string connection, bool force, bool install, SqlType sqlType, bool useTransaction, string path)
+        public void AssertConfig(Config config, string connection, bool force, bool install, SqlType sqlType, bool useTransaction, bool stackTraces, bool strictEncoding, string path)
         {
             Assert.IsNotNull(config);
             Assert.AreEqual(connection, config.ConnectionString);
@@ -213,6 +272,8 @@ namespace Badgie.Migrator.Tests
             Assert.AreEqual(install, config.Install);
             Assert.AreEqual(sqlType, config.SqlType);
             Assert.AreEqual(useTransaction, config.UseTransaction);
+            Assert.AreEqual(stackTraces, config.StackTraces);
+            Assert.AreEqual(strictEncoding, config.StrictEncoding);
             Assert.AreEqual(path, config.Path);
         }
 

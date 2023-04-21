@@ -18,6 +18,7 @@ namespace Badgie.Migrator
         public bool UseTransaction { get; set; } = true;
         public bool Verbose { get; set; } = false;
         public bool StackTraces {get; set; } = true;
+        public bool StrictEncoding {get; set; } = false;
 
         public List<Config> Configurations { get; set; }
 
@@ -38,13 +39,14 @@ namespace Badgie.Migrator
 
             if (args == null || args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
             {
-                Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-d:(SqlServer|Postgres|MySql)] [-f] [-i] [-n] [-V] [--no-stack-trce]
+                Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-d:(SqlServer|Postgres|MySql)] [-f] [-i] [-n] [-V] [--no-stack-trace] [--strict-encoding]
 -f                      runs mutated migrations
 -i                      if needed, installs the db table needed to store state
 -d:(SqlServer|Postgres) specifies whether to run against SQL Server, PostgreSQL or MySql
 -n                      avoids wrapping each execution in a transaction
 -V                      Verbose mode: executes with tracing
 --no-stack-trace        Omit the (mostly useless) stack traces
+--strict-encoding       Refuse to run migrations containing invalid characters
 
 Alternative usage: dotnet-badgie-migrator -json=filename
 -json                   path to a json file that contains a array of configurations 
@@ -58,15 +60,19 @@ Alternative usage: dotnet-badgie-migrator -json=filename
                             ""Install"": true|false,
                             ""SqlType"": ""SqlServer""|""Postgres""|""MySql"",
                             ""Path"": ""<path to migrations with wildcards>"",
-                            ""UseTransaction"": true|false
-                          },                      
+                            ""UseTransaction"": true|false,
+                            ""StackTraces"": true|false,
+                            ""StrictEncoding"": true|false
+                          },
                           {
                             ""ConnectionString"": <connection string>,
                             ""Force"": true|false,
                             ""Install"": true|false,
                             ""SqlType"": ""SqlServer""|""Postgres""|""MySql"",
                             ""Path"": ""<path to migrations with wildcards>"",
-                            ""UseTransaction"": true|false
+                            ""UseTransaction"": true|false,
+                            ""StackTraces"": true|false,
+                            ""StrictEncoding"": true|false
                           }
                         ]");
                 return null;
@@ -100,6 +106,10 @@ Alternative usage: dotnet-badgie-migrator -json=filename
                         {
                             case "no-stack-trace":
                                 config.StackTraces = false;
+                                break;
+
+                            case "strict-encoding":
+                                config.StrictEncoding = true;
                                 break;
                         }
                         break;
