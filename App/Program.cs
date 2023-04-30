@@ -90,7 +90,7 @@ namespace Badgie.Migrator
                 {
                     case SqlType.MySql:
                         if (config.Verbose) Console.WriteLine("Info: verifying table on MySQL");
-                        installed = x.GetSchema("Tables", new string[] { null, "", "migration_runs", null }).Rows.Count > 0;
+                        installed = x.GetSchema("Tables", new string[] { null, x.Database, "migration_runs", null }).Rows.Count > 0;
                         break;
 
                     case SqlType.Postgres:

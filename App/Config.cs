@@ -41,7 +41,7 @@ namespace Badgie.Migrator
                 Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-d:(SqlServer|Postgres|MySql)] [-f] [-i] [-n] [-V] [--no-stack-trce]
 -f                      runs mutated migrations
 -i                      if needed, installs the db table needed to store state
--d:(SqlServer|Postgres) specifies whether to run against SQL Server, PostgreSQL or MySql
+-d:<type>               specifies whether to run against SQL Server, PostgreSQL or MySql
 -n                      avoids wrapping each execution in a transaction
 -V                      Verbose mode: executes with tracing
 --no-stack-trace        Omit the (mostly useless) stack traces
