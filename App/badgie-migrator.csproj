@@ -6,7 +6,7 @@
 		<ToolCommandName>dotnet-badgie-migrator</ToolCommandName>
 		<PackageId>Badgie.Migrator</PackageId>
 		<PackageType>DotNetCliTool</PackageType>
-		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+		<TargetFrameworks>net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
 		<Authors>Marco Cecconi et al.</Authors>
 		<Company>Intelligent Hack</Company>
 		<PackageTags>migrations;migrator;sql-server;sqlserver;postgres;pg;postgresql;schema migrations;mysql</PackageTags>
@@ -26,7 +26,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<VersionPrefix>1.3</VersionPrefix>
+		<VersionPrefix>1.4</VersionPrefix>
 		<VersionPrefix Condition=" '$(BUILD_BUILDID)' != '' ">$(VersionPrefix).$(BUILD_BUILDID)</VersionPrefix>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageReleaseNotes>Minor: Add verbose mode and optionally remove stack traces</PackageReleaseNotes>
