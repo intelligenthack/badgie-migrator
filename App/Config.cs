@@ -49,7 +49,7 @@ namespace Badgie.Migrator
 --strict-encoding       Refuse to run migrations containing invalid characters
 
 Alternative usage: dotnet-badgie-migrator -json=filename
--json                   path to a json file that contains a array of configurations 
+-json                   path to a json file that contains an array of configurations 
                         which will be executed in order.
 
                         Example json configuration file:
