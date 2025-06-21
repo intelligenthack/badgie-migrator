@@ -89,6 +89,10 @@ Here is a sample file to use as a template:
 ]
 ```
 
+## Examples
+
+See [EXAMPLES.md](./EXAMPLES.md) for practical, idempotent, and guarded migration examples for SQL Server, MySQL, and Postgres, including advanced patterns for safe column changes and in-code data migrations.
+
 ## Building
 
 ```
