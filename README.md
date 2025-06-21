@@ -8,7 +8,7 @@ As you develop new versions of a server application which you want to deploy wit
 
 ## How are migrations used?
 
-Usually there's a build step that runs migrations. This in general should happen before running the application or running tests. It is a convention that we first alter the database in a backwards compatible way and then we deploy the new version of the application that takes advantage of the new version
+Usually there's a build step that runs migrations. This in general should happen before running the application or running tests. It is a convention that we first alter the database in a backwards compatible way and then we deploy the new version of the application that takes advantage of the new schema version
 
 ## Are migrations safe?
 
