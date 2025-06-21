@@ -8,7 +8,7 @@ As you develop new versions of a server application which you want to deploy wit
 
 ## How are migrations used?
 
-Usually there's a build step that runs migrations. This in general should happen before running the application or running tests. It is a convetion that we first alter the database in a backwards compatible way and then we deploy the new version of the application that takes advantage of the new version
+Usually there's a build step that runs migrations. This in general should happen before running the application or running tests. It is a convention that we first alter the database in a backwards compatible way and then we deploy the new version of the application that takes advantage of the new version
 
 ## Are migrations safe?
 
@@ -29,7 +29,7 @@ Badgie migrator offers significant advantages over common ORM migrators (i.e. ru
 3. The state of migrations is kept safe in a database table. The table is easy to understand and "hack" if you ever need to -- not that this is ever required.
 4. Migrations are ever only run once, even if idempotent. Safety in depth.
 5. The tool catches migration mutations and stops them (unless you force it not to!) because we want to be able to run migrations on a "blank" db and recreate the current state reliably. If we mutate migrations we change the "past" and therefore the schema will not be the same between current systems (pre mutation) and newer systems (post mutation).
-6. We support cases in which you have multiple migration folders, and/or multiple db connections, so you can use this little tool agains big systems
+6. We support cases in which you have multiple migration folders, and/or multiple db connections, so you can use this little tool against big systems
 
 
 ## Installation
@@ -95,4 +95,4 @@ Here is a sample file to use as a template:
 dotnet pack -c Release
 ```
 
-Creates the DotNet CLI Tool package in App/bin/Relase/badgie-migrator.{version}.nupkg
+Creates the DotNet CLI Tool package in App/bin/Release/badgie-migrator.{version}.nupkg
