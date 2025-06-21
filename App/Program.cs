@@ -315,7 +315,7 @@ CREATE TABLE `migration_runs` (
             return MigrationResult.Run;
         }
 
-        private static readonly Regex Splitter = new Regex(@"\nGO\s?\n", RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase);
+        private static readonly Regex Splitter = new Regex(@"\n\s*GO\s*\n", RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase);
         private static readonly string InvalidCharFallback = ((DecoderReplacementFallback)Encoding.UTF8.DecoderFallback).DefaultString;
 
         public static void RunFile(string sql, Config config)
