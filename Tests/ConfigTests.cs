@@ -128,6 +128,7 @@ namespace Badgie.Migrator.Tests
             Assert.AreEqual(true, config.Verbose);
             Assert.AreEqual(true, config.StackTraces);
             Assert.AreEqual(false, config.StrictEncoding);
+            Assert.AreEqual(true, config.EnablePlugins);
         }
 
         [TestCase("path", "-i", "--no-stack-trace", "-f", "-d:SqlServer", "-n", "-V")]
@@ -150,6 +151,7 @@ namespace Badgie.Migrator.Tests
             Assert.AreEqual(true, config.Verbose);
             Assert.AreEqual(false, config.StackTraces);
             Assert.AreEqual(false, config.StrictEncoding);
+            Assert.AreEqual(true, config.EnablePlugins);
         }
 
         [TestCase("path", "-i", "--no-stack-trace", "-f", "-d:SqlServer", "-n", "-V", "--strict-encoding")]
@@ -290,6 +292,22 @@ namespace Badgie.Migrator.Tests
             var config = Config.FromArgs(args);
             Assert.IsNotNull(config);
             Assert.AreEqual(arg, config.Path);
+        }
+        public void Config_DefaultsEnablePluginsToTrue()
+        {
+            var config = new Config();
+            Assert.IsTrue(config.EnablePlugins);
+        }
+
+        [Test]
+        public void Config_FromArgs_SetsEnablePluginsToFalse_WhenNoPluginsFlagPassed()
+        {
+            // Arrange
+            string[] args = { "connection-string", "path", "--no-plugins" };
+
+            // Act
+            var config = Config.FromArgs(args);
+            Assert.IsFalse(config.EnablePlugins);
         }
     }
 }

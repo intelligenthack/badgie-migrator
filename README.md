@@ -89,6 +89,50 @@ Here is a sample file to use as a template:
 ]
 ```
 
+## Database-Specific Plugins
+
+Badgie Migrator includes a plugin system that automatically handles database-specific requirements during migrations. Plugins are enabled by default and can be disabled using the `--no-plugins` flag.
+
+### TimescaleDB Plugin
+
+The TimescaleDB plugin automatically detects when the TimescaleDB extension is installed in a PostgreSQL database and manages background workers during migrations:
+
+- **Before migrations**: Stops TimescaleDB background workers using `SELECT _timescaledb_functions.stop_background_workers();`
+- **After migrations**: Restarts TimescaleDB background workers using `SELECT _timescaledb_functions.start_background_workers();`
+- **On failure**: Attempts to restart background workers even if migrations fail
+
+This ensures that TimescaleDB background processes don't interfere with schema changes during migrations. It can prevent from locks and waiting for migration updates.
+
+#### Usage with TimescaleDB
+
+The plugin activates automatically when:
+1. The database type is PostgreSQL (`-d:Postgres`)
+2. The TimescaleDB extension is installed in the database
+3. Plugins are enabled (default behavior)
+
+Example usage:
+```bash
+# TimescaleDB plugin will automatically activate if TimescaleDB is detected
+dotnet-badgie-migrator "Host=localhost;Database=timescale_db;Username=user;Password=pass" ./migrations/*.sql -d:Postgres -i -V
+
+# Disable plugins if you want to manage TimescaleDB manually
+dotnet-badgie-migrator "Host=localhost;Database=timescale_db;Username=user;Password=pass" ./migrations/*.sql -d:Postgres -i -V --no-plugins
+```
+
+#### JSON Configuration with Plugins
+
+```json
+[
+  {
+    "ConnectionString": "Host=localhost;Database=timescale_db;Username=user;Password=pass",
+    "SqlType": "Postgres",
+    "Path": "./migrations/*.sql",
+    "Install": true,
+    "EnablePlugins": true
+  }
+]
+```
+
 ## Examples
 
 See [EXAMPLES.md](./EXAMPLES.md) for practical, idempotent, and guarded migration examples for SQL Server, MySQL, and Postgres, including advanced patterns for safe column changes and in-code data migrations.

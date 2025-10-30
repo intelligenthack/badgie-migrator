@@ -11,6 +11,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using Badgie.Migrator.Plugins;
 
 namespace Badgie.Migrator
 {
@@ -216,29 +217,72 @@ CREATE TABLE `migration_runs` (
                     Console.WriteLine("Info: {0}", file);
             }
 
-            foreach (var file in files)
+            // Initialize plugin manager
+            var pluginManager = new PluginManager();
+            
+            // Create connection to discover and activate plugins
+            using (var connection = CreateConnection(config))
             {
-                MigrationResult result;
-                if (config.Verbose) Console.WriteLine("Info: handling {0}...", file);
+                pluginManager.DiscoverAndActivatePlugins(connection, config);
+                
+                // Execute pre-migration plugin actions
                 try
                 {
-                    result = ExecuteMigration(file, config);
+                    pluginManager.ExecutePreMigration(connection, config);
                 }
                 catch (Exception ex)
                 {
-                    Console.Error.WriteLine($"Error - {file}");
+                    Console.Error.WriteLine($"Error during pre-migration plugin execution: {ex.Message}");
                     if (config.StackTraces) Console.Error.WriteLine(ex.ToString());
-                    else Console.Error.WriteLine(ex.Message);
                     return false;
                 }
-                Console.WriteLine("{0} - {1}", result, file);
-                if (!config.Force && result == MigrationResult.Changed)
+
+                // Execute migrations
+                bool migrationSuccess = true;
+                Exception migrationException = null;
+                
+                foreach (var file in files)
                 {
-                    return false;
+                    MigrationResult result;
+                    if (config.Verbose) Console.WriteLine("Info: handling {0}...", file);
+                    try
+                    {
+                        result = ExecuteMigration(file, config);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.Error.WriteLine($"Error - {file}");
+                        if (config.StackTraces) Console.Error.WriteLine(ex.ToString());
+                        else Console.Error.WriteLine(ex.Message);
+                        
+                        migrationSuccess = false;
+                        migrationException = ex;
+                        break;
+                    }
+                    Console.WriteLine("{0} - {1}", result, file);
+                    if (!config.Force && result == MigrationResult.Changed)
+                    {
+                        migrationSuccess = false;
+                        break;
+                    }
+                    if (config.Verbose) Console.WriteLine("Info: ...done!");
                 }
-                if (config.Verbose) Console.WriteLine("Info: ...done!");
+
+                // Execute post-migration or failure cleanup plugin actions
+                if (migrationSuccess)
+                {
+                    pluginManager.ExecutePostMigration(connection, config);
+                }
+                else
+                {
+                    if (migrationException != null)
+                    {
+                        pluginManager.ExecuteOnMigrationFailure(connection, config, migrationException);
+                    }
+                }
+
+                return migrationSuccess;
             }
-            return true;
         }
 
         public static MigrationResult ExecuteMigration(string migrationFilename, Config config)
