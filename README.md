@@ -111,30 +111,6 @@ When TimescaleDB is detected, the migrator will:
 
 This ensures that TimescaleDB background processes don't interfere with schema changes during migrations and can prevent locks and waiting during migration updates.
 
-#### Usage with TimescaleDB
-
-The TimescaleDB support works transparently - no special configuration is required:
-
-```bash
-# TimescaleDB support will automatically activate if TimescaleDB is detected
-dotnet-badgie-migrator "Host=localhost;Database=timescale_db;Username=user;Password=pass" ./migrations/*.sql -d:Postgres -i -V
-```
-
-#### JSON Configuration with TimescaleDB
-
-```json
-[
-  {
-    "ConnectionString": "Host=localhost;Database=timescale_db;Username=user;Password=pass",
-    "SqlType": "Postgres",
-    "Path": "./migrations/*.sql",
-    "Install": true,
-    "UseTransaction": true,
-    "Verbose": true
-  }
-]
-```
-
 ## Examples
 
 See [EXAMPLES.md](./EXAMPLES.md) for practical, idempotent, and guarded migration examples for SQL Server, MySQL, and Postgres, including advanced patterns for safe column changes and in-code data migrations.
