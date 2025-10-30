@@ -11,7 +11,7 @@ namespace Badgie.Migrator.Plugins
     {
         public string Name => "TimescaleDB Background Worker Manager";
 
-        private bool _backgroundWorkersWereStopped = false;
+        private bool _backgroundWorkersWereStopped;
 
         /// <summary>
         /// Checks if TimescaleDB extension is installed in the database
@@ -50,14 +50,20 @@ namespace Badgie.Migrator.Plugins
         {
             try
             {
-                if (config.Verbose) Console.WriteLine("Info: Stopping TimescaleDB background workers...");
+                if (config.Verbose)
+                {
+                    Console.WriteLine("Info: Stopping TimescaleDB background workers...");
+                }
 
                 // Stop background workers
                 connection.Execute("SELECT _timescaledb_functions.stop_background_workers();");
                 
                 _backgroundWorkersWereStopped = true;
                 
-                if (config.Verbose) Console.WriteLine("Info: TimescaleDB background workers stopped successfully");
+                if (config.Verbose)
+                {
+                    Console.WriteLine("Info: TimescaleDB background workers stopped successfully");
+                }
             }
             catch (Exception ex)
             {
@@ -73,20 +79,29 @@ namespace Badgie.Migrator.Plugins
         {
             if (!_backgroundWorkersWereStopped)
             {
-                if (config.Verbose) Console.WriteLine("Info: TimescaleDB background workers were not stopped, skipping restart");
+                if (config.Verbose)
+                {
+                    Console.WriteLine("Info: TimescaleDB background workers were not stopped, skipping restart");
+                }
                 return;
             }
 
             try
             {
-                if (config.Verbose) Console.WriteLine("Info: Starting TimescaleDB background workers...");
+                if (config.Verbose)
+                {
+                    Console.WriteLine("Info: Starting TimescaleDB background workers...");
+                }
 
                 // Restart background workers
                 connection.Execute("SELECT _timescaledb_functions.start_background_workers();");
 
                 _backgroundWorkersWereStopped = false;
                 
-                if (config.Verbose) Console.WriteLine("Info: TimescaleDB background workers started successfully");
+                if (config.Verbose)
+                {
+                    Console.WriteLine("Info: TimescaleDB background workers started successfully");
+                }
             }
             catch (Exception ex)
             {
@@ -107,14 +122,20 @@ namespace Badgie.Migrator.Plugins
 
             try
             {
-                if (config.Verbose) Console.WriteLine("Info: Attempting to restart TimescaleDB background workers after migration failure...");
+                if (config.Verbose)
+                {
+                    Console.WriteLine("Info: Attempting to restart TimescaleDB background workers after migration failure...");
+                }
 
                 // Try to restart background workers even after failure
                 connection.Execute("SELECT _timescaledb_functions.start_background_workers();");
                 
                 _backgroundWorkersWereStopped = false;
                 
-                if (config.Verbose) Console.WriteLine("Info: TimescaleDB background workers restarted after failure");
+                if (config.Verbose)
+                {
+                    Console.WriteLine("Info: TimescaleDB background workers restarted after failure");
+                }
             }
             catch (Exception ex)
             {

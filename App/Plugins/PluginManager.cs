@@ -41,7 +41,10 @@ namespace Badgie.Migrator.Plugins
 
             if (!config.EnablePlugins)
             {
-                if (config.Verbose) Console.WriteLine("Info: Plugins are disabled in configuration");
+                if (config.Verbose)
+                {
+                    Console.WriteLine("Info: Plugins are disabled in configuration");
+                }
                 return;
             }
 
@@ -52,17 +55,26 @@ namespace Badgie.Migrator.Plugins
                     if (plugin.ShouldActivate(connection, config))
                     {
                         _activePlugins.Add(plugin);
-                        if (config.Verbose) Console.WriteLine($"Info: Activated plugin: {plugin.Name}");
+                        if (config.Verbose)
+                        {
+                            Console.WriteLine($"Info: Activated plugin: {plugin.Name}");
+                        }
                     }
                     else
                     {
-                        if (config.Verbose) Console.WriteLine($"Info: Plugin {plugin.Name} not applicable for this database");
+                        if (config.Verbose)
+                        {
+                            Console.WriteLine($"Info: Plugin {plugin.Name} not applicable for this database");
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Warning: Error checking plugin {plugin.Name}: {ex.Message}");
-                    if (config.Verbose && config.StackTraces) Console.WriteLine(ex.ToString());
+                    if (config.Verbose && config.StackTraces)
+                    {
+                        Console.WriteLine(ex.ToString());
+                    }
                 }
             }
 
@@ -83,14 +95,23 @@ namespace Badgie.Migrator.Plugins
             {
                 try
                 {
-                    if (config.Verbose) Console.WriteLine($"Info: Executing pre-migration for plugin: {plugin.Name}");
+                    if (config.Verbose)
+                    {
+                        Console.WriteLine($"Info: Executing pre-migration for plugin: {plugin.Name}");
+                    }
                     plugin.PreMigration(connection, config);
-                    if (config.Verbose) Console.WriteLine($"Info: Pre-migration completed for plugin: {plugin.Name}");
+                    if (config.Verbose)
+                    {
+                        Console.WriteLine($"Info: Pre-migration completed for plugin: {plugin.Name}");
+                    }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error: Pre-migration failed for plugin {plugin.Name}: {ex.Message}");
-                    if (config.StackTraces) Console.WriteLine(ex.ToString());
+                    if (config.StackTraces)
+                    {
+                        Console.WriteLine(ex.ToString());
+                    }
                     throw; // Re-throw to stop migration process
                 }
             }
@@ -109,14 +130,23 @@ namespace Badgie.Migrator.Plugins
                 var plugin = _activePlugins[i];
                 try
                 {
-                    if (config.Verbose) Console.WriteLine($"Info: Executing post-migration for plugin: {plugin.Name}");
+                    if (config.Verbose)
+                    {
+                        Console.WriteLine($"Info: Executing post-migration for plugin: {plugin.Name}");
+                    }
                     plugin.PostMigration(connection, config);
-                    if (config.Verbose) Console.WriteLine($"Info: Post-migration completed for plugin: {plugin.Name}");
+                    if (config.Verbose)
+                    {
+                        Console.WriteLine($"Info: Post-migration completed for plugin: {plugin.Name}");
+                    }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Warning: Post-migration failed for plugin {plugin.Name}: {ex.Message}");
-                    if (config.StackTraces) Console.WriteLine(ex.ToString());
+                    if (config.StackTraces)
+                    {
+                        Console.WriteLine(ex.ToString());
+                    }
                     // Don't re-throw post-migration errors to avoid masking the main migration success
                 }
             }
@@ -136,13 +166,19 @@ namespace Badgie.Migrator.Plugins
                 var plugin = _activePlugins[i];
                 try
                 {
-                    if (config.Verbose) Console.WriteLine($"Info: Executing failure cleanup for plugin: {plugin.Name}");
+                    if (config.Verbose)
+                    {
+                        Console.WriteLine($"Info: Executing failure cleanup for plugin: {plugin.Name}");
+                    }
                     plugin.OnMigrationFailure(connection, config, originalException);
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Warning: Failure cleanup failed for plugin {plugin.Name}: {ex.Message}");
-                    if (config.StackTraces) Console.WriteLine(ex.ToString());
+                    if (config.StackTraces)
+                    {
+                        Console.WriteLine(ex.ToString());
+                    }
                     // Don't re-throw cleanup errors
                 }
             }
