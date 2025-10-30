@@ -258,7 +258,6 @@ CREATE TABLE `migration_runs` (
 
                 // Execute migrations
                 bool migrationSuccess = true;
-                Exception migrationException = null;
                 
                 foreach (var file in files)
                 {
@@ -275,7 +274,6 @@ CREATE TABLE `migration_runs` (
                         else Console.Error.WriteLine(ex.Message);
                         
                         migrationSuccess = false;
-                        migrationException = ex;
                         break;
                     }
                     Console.WriteLine("{0} - {1}", result, file);

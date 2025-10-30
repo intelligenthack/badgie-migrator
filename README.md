@@ -51,13 +51,14 @@ dotnet tool install -g Badgie.Migrator
 Once the tool is installed you can simply call it like:
 
 ```
-dotnet-badgie-migrator <connection string> [drive:][path][filename pattern] [-f] [-i] [-d] [-n] [-V] [--no-stack-trace]
+dotnet-badgie-migrator <connection string> [drive:][path][filename pattern] [-f] [-i] [-d] [-n] [-V] [--no-stack-trace] [--strict-encoding]
   -f runs mutated migrations
   -i if needed, installs the db table needed to store state
   -d:(SqlServer|Postgres|MySql) specifies whether to run against SQL Server, PostgreSQL or MySql
   -n avoids wrapping each execution in a transaction 
   -V verbose mode for debugging
   --no-stack-trace omits the (mostly useless) stack traces
+  --strict-encoding refuse to run migrations containing invalid characters
 ```
 
 Alternatively, if you have many databases to run migrations against you can pass a json configuration file with many configurations:
@@ -76,7 +77,9 @@ Here is a sample file to use as a template:
     "Install": true,
     "SqlType": "SqlServer",
     "Path": "Path 1",
-    "UseTransaction": true
+    "UseTransaction": true,
+    "StackTraces": true,
+    "StrictEncoding": false
   },                      
   {
     "ConnectionString": "Connection 2",
@@ -84,42 +87,40 @@ Here is a sample file to use as a template:
     "Install": false,
     "SqlType": "Postgres",
     "Path": "Path 2",
-    "UseTransaction": false
+    "UseTransaction": false,
+    "StackTraces": true,
+    "StrictEncoding": false
   }
 ]
 ```
 
-## Database-Specific Plugins
+## TimescaleDB Support
 
-Badgie Migrator includes a plugin system that automatically handles database-specific requirements during migrations. Plugins are enabled by default and can be disabled using the `--no-plugins` flag.
+Badgie Migrator includes built-in support for TimescaleDB when working with PostgreSQL databases. When the TimescaleDB extension is detected, the migrator automatically manages background workers during migrations to prevent conflicts and ensure smooth schema changes.
 
-### TimescaleDB Plugin
+### Automatic TimescaleDB Detection
 
-The TimescaleDB plugin automatically detects when the TimescaleDB extension is installed in a PostgreSQL database and manages background workers during migrations:
+The TimescaleDB support activates automatically when:
+1. The database type is PostgreSQL (`-d:Postgres`)
+2. The TimescaleDB extension is installed in the database (`SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'timescaledb')`)
 
-- **Before migrations**: Stops TimescaleDB background workers using `SELECT _timescaledb_functions.stop_background_workers();`
-- **After migrations**: Restarts TimescaleDB background workers using `SELECT _timescaledb_functions.start_background_workers();`
-- **On failure**: Attempts to restart background workers even if migrations fail
+When TimescaleDB is detected, the migrator will:
+- **Before migrations**: Stop TimescaleDB background workers using `SELECT _timescaledb_functions.stop_background_workers();`
+- **After migrations**: Restart TimescaleDB background workers using `SELECT _timescaledb_functions.start_background_workers();`
+- **On failure**: Attempt to restart background workers even if migrations fail
 
-This ensures that TimescaleDB background processes don't interfere with schema changes during migrations. It can prevent from locks and waiting for migration updates.
+This ensures that TimescaleDB background processes don't interfere with schema changes during migrations and can prevent locks and waiting during migration updates.
 
 #### Usage with TimescaleDB
 
-The plugin activates automatically when:
-1. The database type is PostgreSQL (`-d:Postgres`)
-2. The TimescaleDB extension is installed in the database
-3. Plugins are enabled (default behavior)
+The TimescaleDB support works transparently - no special configuration is required:
 
-Example usage:
 ```bash
-# TimescaleDB plugin will automatically activate if TimescaleDB is detected
+# TimescaleDB support will automatically activate if TimescaleDB is detected
 dotnet-badgie-migrator "Host=localhost;Database=timescale_db;Username=user;Password=pass" ./migrations/*.sql -d:Postgres -i -V
-
-# Disable plugins if you want to manage TimescaleDB manually
-dotnet-badgie-migrator "Host=localhost;Database=timescale_db;Username=user;Password=pass" ./migrations/*.sql -d:Postgres -i -V --no-plugins
 ```
 
-#### JSON Configuration with Plugins
+#### JSON Configuration with TimescaleDB
 
 ```json
 [
@@ -128,7 +129,8 @@ dotnet-badgie-migrator "Host=localhost;Database=timescale_db;Username=user;Passw
     "SqlType": "Postgres",
     "Path": "./migrations/*.sql",
     "Install": true,
-    "EnablePlugins": true
+    "UseTransaction": true,
+    "Verbose": true
   }
 ]
 ```
