@@ -11,7 +11,6 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using Badgie.Migrator.Plugins;
 
 namespace Badgie.Migrator
 {
@@ -217,24 +216,44 @@ CREATE TABLE `migration_runs` (
                     Console.WriteLine("Info: {0}", file);
             }
 
-            // Initialize plugin manager
-            var pluginManager = new PluginManager();
-            
-            // Create connection to discover and activate plugins
+            // Create connection and handle migrations
             using (var connection = CreateConnection(config))
             {
-                pluginManager.DiscoverAndActivatePlugins(connection, config);
+                bool timescaleBackgroundWorkersStopped = false;
                 
-                // Execute pre-migration plugin actions
+                // For PostgreSQL, check if TimescaleDB extension is installed and stop background workers
                 try
                 {
-                    pluginManager.ExecutePreMigration(connection, config);
+                    if (config.SqlType == SqlType.Postgres)
+                    {
+                        var timescaleInstalled = connection.QueryFirstOrDefault<bool>(
+                            "SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'timescaledb');"
+                        );
+
+                        if (timescaleInstalled)
+                        {
+                            if (config.Verbose)
+                            {
+                                Console.WriteLine("Info: TimescaleDB extension detected, stopping background workers...");
+                            }
+
+                            connection.Execute("SELECT _timescaledb_functions.stop_background_workers();");
+                            timescaleBackgroundWorkersStopped = true;
+                            
+                            if (config.Verbose)
+                            {
+                                Console.WriteLine("Info: TimescaleDB background workers stopped successfully");
+                            }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Console.Error.WriteLine($"Error during pre-migration plugin execution: {ex.Message}");
-                    if (config.StackTraces) Console.Error.WriteLine(ex.ToString());
-                    return false;
+                    if (config.Verbose)
+                    {
+                        Console.WriteLine($"Info: Could not detect or stop TimescaleDB background workers: {ex.Message}");
+                    }
+                    // Continue with migrations even if TimescaleDB detection/stopping fails
                 }
 
                 // Execute migrations
@@ -268,16 +287,30 @@ CREATE TABLE `migration_runs` (
                     if (config.Verbose) Console.WriteLine("Info: ...done!");
                 }
 
-                // Execute post-migration or failure cleanup plugin actions
-                if (migrationSuccess)
+                // Restart TimescaleDB background workers if they were stopped
+                if (timescaleBackgroundWorkersStopped)
                 {
-                    pluginManager.ExecutePostMigration(connection, config);
-                }
-                else
-                {
-                    if (migrationException != null)
+                    try
                     {
-                        pluginManager.ExecuteOnMigrationFailure(connection, config, migrationException);
+                        if (config.Verbose)
+                        {
+                            Console.WriteLine("Info: Starting TimescaleDB background workers...");
+                        }
+
+                        connection.Execute("SELECT _timescaledb_functions.start_background_workers();");
+                        
+                        if (config.Verbose)
+                        {
+                            Console.WriteLine("Info: TimescaleDB background workers started successfully");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Warning: Failed to restart TimescaleDB background workers: {ex.Message}");
+                        if (!migrationSuccess)
+                        {
+                            Console.WriteLine("Warning: You may need to manually restart TimescaleDB background workers using: SELECT _timescaledb_functions.start_background_workers();");
+                        }
                     }
                 }
 
