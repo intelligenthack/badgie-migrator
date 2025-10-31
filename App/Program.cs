@@ -220,7 +220,7 @@ CREATE TABLE `migration_runs` (
             using (var connection = CreateConnection(config))
             {
                 bool timescaleBackgroundWorkersStopped = false;
-                
+                bool migrationSuccess = true;
                 // For PostgreSQL, check if TimescaleDB extension is installed and stop background workers
                 try
                 {
@@ -253,36 +253,39 @@ CREATE TABLE `migration_runs` (
                     {
                         Console.WriteLine($"Info: Could not detect or stop TimescaleDB background workers: {ex.Message}");
                     }
-                    // Continue with migrations even if TimescaleDB detection/stopping fails
+                    if (!config.Force)
+                        migrationSuccess = false;
                 }
 
                 // Execute migrations
-                bool migrationSuccess = true;
-                
-                foreach (var file in files)
+
+                if (migrationSuccess)
                 {
-                    MigrationResult result;
-                    if (config.Verbose) Console.WriteLine("Info: handling {0}...", file);
-                    try
+                    foreach (var file in files)
                     {
-                        result = ExecuteMigration(file, config);
+                        MigrationResult result;
+                        if (config.Verbose) Console.WriteLine("Info: handling {0}...", file);
+                        try
+                        {
+                            result = ExecuteMigration(file, config);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.Error.WriteLine($"Error - {file}");
+                            if (config.StackTraces) Console.Error.WriteLine(ex.ToString());
+                            else Console.Error.WriteLine(ex.Message);
+
+                            migrationSuccess = false;
+                            break;
+                        }
+                        Console.WriteLine("{0} - {1}", result, file);
+                        if (!config.Force && result == MigrationResult.Changed)
+                        {
+                            migrationSuccess = false;
+                            break;
+                        }
+                        if (config.Verbose) Console.WriteLine("Info: ...done!");
                     }
-                    catch (Exception ex)
-                    {
-                        Console.Error.WriteLine($"Error - {file}");
-                        if (config.StackTraces) Console.Error.WriteLine(ex.ToString());
-                        else Console.Error.WriteLine(ex.Message);
-                        
-                        migrationSuccess = false;
-                        break;
-                    }
-                    Console.WriteLine("{0} - {1}", result, file);
-                    if (!config.Force && result == MigrationResult.Changed)
-                    {
-                        migrationSuccess = false;
-                        break;
-                    }
-                    if (config.Verbose) Console.WriteLine("Info: ...done!");
                 }
 
                 // Restart TimescaleDB background workers if they were stopped
