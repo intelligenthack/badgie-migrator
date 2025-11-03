@@ -254,7 +254,9 @@ CREATE TABLE `migration_runs` (
                         Console.WriteLine($"Info: Could not detect or stop TimescaleDB background workers: {ex.Message}");
                     }
                     if (!config.Force)
+                    {
                         migrationSuccess = false;
+                    }
                 }
 
                 // Execute migrations
