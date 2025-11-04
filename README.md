@@ -51,14 +51,13 @@ dotnet tool install -g Badgie.Migrator
 Once the tool is installed you can simply call it like:
 
 ```
-dotnet-badgie-migrator <connection string> [drive:][path][filename pattern] [-f] [-i] [-d] [-n] [-V] [--no-stack-trace] [--pause-timescaledb-jobs]
+dotnet-badgie-migrator <connection string> [drive:][path][filename pattern] [-f] [-i] [-d] [-n] [-V] [--no-stack-trace]
   -f runs mutated migrations
   -i if needed, installs the db table needed to store state
-  -d:(SqlServer|Postgres|MySql) specifies whether to run against SQL Server, PostgreSQL or MySql
+  -d:(SqlServer|Postgres|MySql|Timescale) specifies whether to run against SQL Server, PostgreSQL, MySQL or TimescaleDB
   -n avoids wrapping each execution in a transaction 
   -V verbose mode for debugging
   --no-stack-trace omits the (mostly useless) stack traces
-  --pause-timescaledb-jobs pause TimescaleDB background workers during migrations (Postgres only)
 ```
 
 Alternatively, if you have many databases to run migrations against you can pass a json configuration file with many configurations:
@@ -83,48 +82,47 @@ Here is a sample file to use as a template:
     "ConnectionString": "Connection 2",
     "Force": false,
     "Install": false,
-    "SqlType": "Postgres",
+    "SqlType": "Timescale",
     "Path": "Path 2",
-    "UseTransaction": false,
-    "PauseTimescaleDbJobs": true
+    "UseTransaction": false
   }
 ]
 ```
 
 ## TimescaleDB Support
 
-Badgie Migrator includes optional support for pausing TimescaleDB background workers during migrations when working with PostgreSQL databases. This feature can help prevent conflicts and ensure smooth schema changes.
+Badgie Migrator includes built-in support for TimescaleDB databases. When using TimescaleDB, the migrator automatically manages background workers to prevent conflicts during schema changes.
 
-### How to Enable TimescaleDB Support
+### How to Use TimescaleDB Support
 
-If you use Timescaledb extension, you may have background policies refreshing and often locking hypertables. Use the `--pause-timescaledb-jobs` flag to stop Timescaledb Background workers before migrations and start again after migrations:
+If you use the TimescaleDB extension, you may have background policies refreshing and often locking hypertables. Simply specify `-d:Timescale` as the database type to automatically pause TimescaleDB background workers before migrations and restart them afterward:
 
 **Command line:**
 ```bash
-dotnet-badgie-migrator "connection_string" migrations/*.sql -d:Postgres --pause-timescaledb-jobs
+dotnet-badgie-migrator "connection_string" migrations/*.sql -d:Timescale
 ```
 
 **JSON configuration:**
 ```json
 {
   "ConnectionString": "Host=localhost;Database=mydb;Username=user;Password=pass",
-  "SqlType": "Postgres",
-  "Path": "migrations/*.sql",
-  "PauseTimescaleDbJobs": true
+  "SqlType": "Timescale",
+  "Path": "migrations/*.sql"
 }
 ```
 
 ### What It Does
 
-When `--pause-timescaledb-jobs` is enabled and the TimescaleDB extension is detected:
-1. **Before migrations**: Stops TimescaleDB background workers using `SELECT _timescaledb_functions.stop_background_workers();`
-2. **During migrations**: Runs your migration scripts without interference from TimescaleDB background processes
-3. **After migrations**: Restarts TimescaleDB background workers using `SELECT _timescaledb_functions.start_background_workers();`
-4. **On failure**: Attempts to restart background workers even if migrations fail, and displays a warning if unable to restart
+When you specify `SqlType` as `Timescale`:
+1. **Connection verification**: Verifies that the TimescaleDB extension is actually installed in the database
+2. **Before migrations**: Automatically stops TimescaleDB background workers using `SELECT _timescaledb_functions.stop_background_workers();`
+3. **During migrations**: Runs your migration scripts without interference from TimescaleDB background processes
+4. **After migrations**: Automatically restarts TimescaleDB background workers using `SELECT _timescaledb_functions.start_background_workers();`
+5. **On failure**: Always attempts to restart background workers in a finally block, even if migrations fail, ensuring workers are not left in a stopped state
 
-This prevents TimescaleDB background processes from interfering with schema changes during migrations and can help avoid locks and delays during migration updates.
+This prevents TimescaleDB background processes from interfering with schema changes during migrations and helps avoid locks and delays during migration updates.
 
-**Note:** This feature is **disabled by default**. TimescaleDB background workers will only be paused if you explicitly enable the flag.
+**Note:** If the TimescaleDB extension is not installed in your database, the migrator will fail with a clear error message suggesting you use `SqlType.Postgres` instead.
 
 ## Examples
 

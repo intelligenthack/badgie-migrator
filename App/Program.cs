@@ -94,6 +94,7 @@ namespace Badgie.Migrator
                         break;
 
                     case SqlType.Postgres:
+                    case SqlType.Timescale:
                         if (config.Verbose) Console.WriteLine("Info: verifying table on Postgres");
                         installed = x.GetSchema("Tables", new string[] { null, "public", "migrationruns", null }).Rows.Count > 0;
                         break;
@@ -147,6 +148,29 @@ namespace Badgie.Migrator
 
                         return conn;
                     }
+                case SqlType.Timescale:
+                    {
+                        var conn = new NpgsqlConnection(config.ConnectionString);
+                        if (conn.State != ConnectionState.Open)
+                        {
+                            conn.Open();
+                        }
+
+                        // Verify that TimescaleDB extension is installed
+                        var timescaleInstalled = conn.QueryFirstOrDefault<bool>(
+                            "SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'timescaledb');"
+                        );
+
+                        if (!timescaleInstalled)
+                        {
+                            throw new InvalidOperationException(
+                                "TimescaleDB extension is not installed in this database. " +
+                                "Please use SqlType.Postgres for regular PostgreSQL databases or install TimescaleDB extension."
+                            );
+                        }
+
+                        return conn;
+                    }
                 case SqlType.SqlServer:
                     {
                         var conn = new SqlConnection(config.ConnectionString);
@@ -178,6 +202,7 @@ CREATE TABLE [dbo].[MigrationRuns] (
     CONSTRAINT [PK_MigrationRuns] PRIMARY KEY CLUSTERED ([Id] ASC)
 );";
                 case SqlType.Postgres:
+                case SqlType.Timescale:
                     return @"
 CREATE SEQUENCE MigrationRuns_Id_seq INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 START 1 CACHE 1;
 CREATE TABLE ""public"".MigrationRuns (
@@ -221,48 +246,38 @@ CREATE TABLE `migration_runs` (
             {
                 bool timescaleBackgroundWorkersStopped = false;
                 bool migrationSuccess = true;
-                // For PostgreSQL, check if TimescaleDB extension is installed and stop background workers
-                try
+                
+                // For TimescaleDB, stop background workers before migrations
+                if (config.SqlType == SqlType.Timescale)
                 {
-                    if (config.SqlType == SqlType.Postgres && config.PauseTimescaleDbJobs)
+                    try
                     {
-                        var timescaleInstalled = connection.QueryFirstOrDefault<bool>(
-                            "SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'timescaledb');"
-                        );
-
-                        if (timescaleInstalled)
+                        if (config.Verbose)
                         {
-                            if (config.Verbose)
-                            {
-                                Console.WriteLine("Info: TimescaleDB extension detected, stopping background workers...");
-                            }
+                            Console.WriteLine("Info: Stopping TimescaleDB background workers...");
+                        }
 
-                            connection.Execute("SELECT _timescaledb_functions.stop_background_workers();");
-                            timescaleBackgroundWorkersStopped = true;
-                            
-                            if (config.Verbose)
-                            {
-                                Console.WriteLine("Info: TimescaleDB background workers stopped successfully");
-                            }
+                        connection.Execute("SELECT _timescaledb_functions.stop_background_workers();");
+                        timescaleBackgroundWorkersStopped = true;
+                        
+                        if (config.Verbose)
+                        {
+                            Console.WriteLine("Info: TimescaleDB background workers stopped successfully");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.Error.WriteLine($"Error: Failed to stop TimescaleDB background workers: {ex.Message}");
+                        if (!config.Force)
+                        {
+                            return false;
                         }
                     }
                 }
-                catch (Exception ex)
-                {
-                    if (config.Verbose)
-                    {
-                        Console.WriteLine($"Info: Could not detect or stop TimescaleDB background workers: {ex.Message}");
-                    }
-                    if (!config.Force)
-                    {
-                        migrationSuccess = false;
-                    }
-                }
 
-                // Execute migrations
-
-                if (migrationSuccess)
+                try
                 {
+                    // Execute migrations
                     foreach (var file in files)
                     {
                         MigrationResult result;
@@ -289,30 +304,29 @@ CREATE TABLE `migration_runs` (
                         if (config.Verbose) Console.WriteLine("Info: ...done!");
                     }
                 }
-
-                // Restart TimescaleDB background workers if they were stopped
-                if (timescaleBackgroundWorkersStopped)
+                finally
                 {
-                    try
+                    // Restart TimescaleDB background workers if they were stopped
+                    if (timescaleBackgroundWorkersStopped)
                     {
-                        if (config.Verbose)
+                        try
                         {
-                            Console.WriteLine("Info: Starting TimescaleDB background workers...");
-                        }
+                            if (config.Verbose)
+                            {
+                                Console.WriteLine("Info: Starting TimescaleDB background workers...");
+                            }
 
-                        connection.Execute("SELECT _timescaledb_functions.start_background_workers();");
-                        
-                        if (config.Verbose)
-                        {
-                            Console.WriteLine("Info: TimescaleDB background workers started successfully");
+                            connection.Execute("SELECT _timescaledb_functions.start_background_workers();");
+                            
+                            if (config.Verbose)
+                            {
+                                Console.WriteLine("Info: TimescaleDB background workers started successfully");
+                            }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Warning: Failed to restart TimescaleDB background workers: {ex.Message}");
-                        if (!migrationSuccess)
+                        catch (Exception ex)
                         {
-                            Console.WriteLine("Warning: You may need to manually restart TimescaleDB background workers using: SELECT _timescaledb_functions.start_background_workers();");
+                            Console.Error.WriteLine($"Error: Failed to restart TimescaleDB background workers: {ex.Message}");
+                            Console.Error.WriteLine("Warning: You may need to manually restart TimescaleDB background workers using: SELECT _timescaledb_functions.start_background_workers();");
                         }
                     }
                 }
