@@ -224,7 +224,7 @@ CREATE TABLE `migration_runs` (
                 // For PostgreSQL, check if TimescaleDB extension is installed and stop background workers
                 try
                 {
-                    if (config.SqlType == SqlType.Postgres)
+                    if (config.SqlType == SqlType.Postgres && config.PauseTimescaleDbJobs)
                     {
                         var timescaleInstalled = connection.QueryFirstOrDefault<bool>(
                             "SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'timescaledb');"

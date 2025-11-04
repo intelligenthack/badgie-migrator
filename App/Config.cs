@@ -19,6 +19,7 @@ namespace Badgie.Migrator
         public bool Verbose { get; set; } = false;
         public bool StackTraces {get; set; } = true;
         public bool StrictEncoding {get; set; } = false;
+        public bool PauseTimescaleDbJobs { get; set; } = false;
 
         public List<Config> Configurations { get; set; }
 
@@ -39,7 +40,7 @@ namespace Badgie.Migrator
 
             if (args == null || args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
             {
-                Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-d:(SqlServer|Postgres|MySql)] [-f] [-i] [-n] [-V] [--no-stack-trace] [--strict-encoding]
+                Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-d:(SqlServer|Postgres|MySql)] [-f] [-i] [-n] [-V] [--no-stack-trace] [--strict-encoding] [--pause-timescaledb-jobs]
 -f                      runs mutated migrations
 -i                      if needed, installs the db table needed to store state
 -d:<type>               specifies whether to run against SQL Server, PostgreSQL or MySql
@@ -47,6 +48,7 @@ namespace Badgie.Migrator
 -V                      Verbose mode: executes with tracing
 --no-stack-trace        Omit the (mostly useless) stack traces
 --strict-encoding       Refuse to run migrations containing invalid characters
+--pause-timescaledb-jobs  Pause TimescaleDB background workers during migrations (Postgres only)
 
 Alternative usage: dotnet-badgie-migrator -json=filename
 -json                   path to a json file that contains an array of configurations 
@@ -62,7 +64,8 @@ Alternative usage: dotnet-badgie-migrator -json=filename
                             ""Path"": ""<path to migrations with wildcards>"",
                             ""UseTransaction"": true|false,
                             ""StackTraces"": true|false,
-                            ""StrictEncoding"": true|false
+                            ""StrictEncoding"": true|false,
+                            ""PauseTimescaleDbJobs"": true|false
                           },
                           {
                             ""ConnectionString"": <connection string>,
@@ -72,7 +75,8 @@ Alternative usage: dotnet-badgie-migrator -json=filename
                             ""Path"": ""<path to migrations with wildcards>"",
                             ""UseTransaction"": true|false,
                             ""StackTraces"": true|false,
-                            ""StrictEncoding"": true|false
+                            ""StrictEncoding"": true|false,
+                            ""PauseTimescaleDbJobs"": true|false
                           }
                         ]");
                 return null;
@@ -110,6 +114,10 @@ Alternative usage: dotnet-badgie-migrator -json=filename
 
                             case "strict-encoding":
                                 config.StrictEncoding = true;
+                                break;
+
+                            case "pause-timescaledb-jobs":
+                                config.PauseTimescaleDbJobs = true;
                                 break;
                         }
                         break;

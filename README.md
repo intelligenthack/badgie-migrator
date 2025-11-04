@@ -51,13 +51,14 @@ dotnet tool install -g Badgie.Migrator
 Once the tool is installed you can simply call it like:
 
 ```
-dotnet-badgie-migrator <connection string> [drive:][path][filename pattern] [-f] [-i] [-d] [-n] [-V] [--no-stack-trace]
+dotnet-badgie-migrator <connection string> [drive:][path][filename pattern] [-f] [-i] [-d] [-n] [-V] [--no-stack-trace] [--pause-timescaledb-jobs]
   -f runs mutated migrations
   -i if needed, installs the db table needed to store state
   -d:(SqlServer|Postgres|MySql) specifies whether to run against SQL Server, PostgreSQL or MySql
   -n avoids wrapping each execution in a transaction 
   -V verbose mode for debugging
   --no-stack-trace omits the (mostly useless) stack traces
+  --pause-timescaledb-jobs pause TimescaleDB background workers during migrations (Postgres only)
 ```
 
 Alternatively, if you have many databases to run migrations against you can pass a json configuration file with many configurations:
@@ -84,27 +85,46 @@ Here is a sample file to use as a template:
     "Install": false,
     "SqlType": "Postgres",
     "Path": "Path 2",
-    "UseTransaction": false
+    "UseTransaction": false,
+    "PauseTimescaleDbJobs": true
   }
 ]
 ```
 
 ## TimescaleDB Support
 
-Badgie Migrator includes built-in support for TimescaleDB when working with PostgreSQL databases. When the TimescaleDB extension is detected, the migrator automatically manages background workers during migrations to prevent conflicts and ensure smooth schema changes.
+Badgie Migrator includes optional support for pausing TimescaleDB background workers during migrations when working with PostgreSQL databases. This feature can help prevent conflicts and ensure smooth schema changes.
 
-### Automatic TimescaleDB Detection
+### How to Enable TimescaleDB Support
 
-The TimescaleDB support activates automatically when:
-1. The database type is PostgreSQL (`-d:Postgres`)
-2. The TimescaleDB extension is installed in the database (`SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'timescaledb')`)
+If you use Timescaledb extension, you may have background policies refreshing and often locking hypertables. Use the `--pause-timescaledb-jobs` flag to stop Timescaledb Background workers before migrations and start again after migrations:
 
-When TimescaleDB is detected, the migrator will:
-- **Before migrations**: Stop TimescaleDB background workers using `SELECT _timescaledb_functions.stop_background_workers();`
-- **After migrations**: Restart TimescaleDB background workers using `SELECT _timescaledb_functions.start_background_workers();`
-- **On failure**: Attempt to restart background workers even if migrations fail
+**Command line:**
+```bash
+dotnet-badgie-migrator "connection_string" migrations/*.sql -d:Postgres --pause-timescaledb-jobs
+```
 
-This ensures that TimescaleDB background processes don't interfere with schema changes during migrations and can prevent locks and waiting during migration updates.
+**JSON configuration:**
+```json
+{
+  "ConnectionString": "Host=localhost;Database=mydb;Username=user;Password=pass",
+  "SqlType": "Postgres",
+  "Path": "migrations/*.sql",
+  "PauseTimescaleDbJobs": true
+}
+```
+
+### What It Does
+
+When `--pause-timescaledb-jobs` is enabled and the TimescaleDB extension is detected:
+1. **Before migrations**: Stops TimescaleDB background workers using `SELECT _timescaledb_functions.stop_background_workers();`
+2. **During migrations**: Runs your migration scripts without interference from TimescaleDB background processes
+3. **After migrations**: Restarts TimescaleDB background workers using `SELECT _timescaledb_functions.start_background_workers();`
+4. **On failure**: Attempts to restart background workers even if migrations fail, and displays a warning if unable to restart
+
+This prevents TimescaleDB background processes from interfering with schema changes during migrations and can help avoid locks and delays during migration updates.
+
+**Note:** This feature is **disabled by default**. TimescaleDB background workers will only be paused if you explicitly enable the flag.
 
 ## Examples
 
