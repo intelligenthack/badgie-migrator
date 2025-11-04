@@ -19,7 +19,7 @@ namespace Badgie.Migrator
         public bool Verbose { get; set; } = false;
         public bool StackTraces {get; set; } = true;
         public bool StrictEncoding {get; set; } = false;
-        public bool PauseTimescaleDbJobs { get; set; } = false;
+        public bool PauseTimescaleDbJobs { get; set; }
 
         public List<Config> Configurations { get; set; }
 
