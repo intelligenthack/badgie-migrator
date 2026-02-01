@@ -5,7 +5,6 @@
 		<PackAsTool>true</PackAsTool>
 		<ToolCommandName>dotnet-badgie-migrator</ToolCommandName>
 		<PackageId>Badgie.Migrator</PackageId>
-		<PackageType>DotNetCliTool</PackageType>
 		<TargetFrameworks>net8.0;net9.0</TargetFrameworks>
 		<Authors>Marco Cecconi et al.</Authors>
 		<Company>Intelligent Hack</Company>
@@ -26,9 +25,9 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>1.5.0</Version>
+		<Version>1.5.1</Version>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-		<PackageReleaseNotes>v1.5.0: Migrated CI/CD from Azure DevOps to GitHub Actions with Trusted Publishing.</PackageReleaseNotes>
+		<PackageReleaseNotes>v1.5.1: Migrated CI/CD to GitHub Actions, removed deprecated DotNetCliTool package type.</PackageReleaseNotes>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 	<ItemGroup>
