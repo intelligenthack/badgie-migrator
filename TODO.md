@@ -1,7 +1,7 @@
 # TODO
 
 ## Database Support
-- [ ] Add SQLite support
+- [x] Add SQLite support
 - [ ] Add Oracle support
 
 ## OSS Development
@@ -19,6 +19,11 @@
 - [ ] Add architecture diagram
 
 ## Code Quality
-- [ ] Fix security vulnerabilities in dependencies (System.Data.SqlClient, System.Drawing.Common)
-- [ ] Enable nullable reference types
-- [ ] Update Dapper to 2.x
+- [x] Fix security vulnerabilities in dependencies (System.Data.SqlClient, System.Drawing.Common)
+- [x] Update Dapper to 2.x
+- [ ] Enable Dependabot
+- [ ] Enable SonarQube
+
+## Post-Release
+- [ ] Close issue #14 (GitHub Actions migration complete)
+- [ ] Keep issue #11 open (Oracle support tracked above)
