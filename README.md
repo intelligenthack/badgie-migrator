@@ -47,6 +47,28 @@ dotnet tool install -g Badgie.Migrator
 </ItemGroup>
 ```
 
+## Connection Strings
+
+### SQL Server
+```
+Server=localhost;Database=mydb;User Id=sa;Password=yourpassword;TrustServerCertificate=True
+```
+
+### PostgreSQL
+```
+Host=localhost;Database=mydb;Username=postgres;Password=yourpassword
+```
+
+### MySQL
+```
+Server=localhost;Database=mydb;Uid=root;Pwd=yourpassword;
+```
+
+### SQLite
+```
+Data Source=path/to/database.db
+```
+
 ## Usage
 Once the tool is installed you can simply call it like:
 
@@ -100,6 +122,32 @@ Here is a sample file to use as a template:
 ## Examples
 
 See [EXAMPLES.md](./EXAMPLES.md) for practical, idempotent, and guarded migration examples for SQL Server, MySQL, and Postgres, including advanced patterns for safe column changes and in-code data migrations.
+
+## Migration Table Schema
+
+Badgie.Migrator tracks executed migrations in a database table. The schema varies slightly by database:
+
+### SQL Server / PostgreSQL / SQLite
+| Column | Type | Description |
+|--------|------|-------------|
+| Id | INT | Auto-incrementing primary key |
+| LastRun | DATETIME/TIMESTAMP/TEXT | When the migration was executed |
+| Filename | VARCHAR/TEXT | Migration filename |
+| MD5 | VARCHAR | Hash of migration content |
+| MigrationResult | INT | Result code (0=Run, 1=Skipped, 2=Changed) |
+
+### MySQL
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INT | Auto-incrementing primary key |
+| last_run | DATETIME | When the migration was executed |
+| filename | TEXT | Migration filename |
+| md5 | VARCHAR(50) | Hash of migration content |
+| migration_result | TINYINT | Result code (0=Run, 1=Skipped, 2=Changed) |
+
+## Troubleshooting
+
+See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for common issues and solutions.
 
 ## Building
 
