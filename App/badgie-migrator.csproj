@@ -25,9 +25,9 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>1.5.1</Version>
+		<Version>1.6.0</Version>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-		<PackageReleaseNotes>v1.5.1: Migrated CI/CD to GitHub Actions, removed deprecated DotNetCliTool package type.</PackageReleaseNotes>
+		<PackageReleaseNotes>v1.6.0: Added SQLite support, updated dependencies (Dapper 2.x, Microsoft.Data.SqlClient 6.x), fixed security vulnerabilities, added documentation and OSS templates.</PackageReleaseNotes>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 	<ItemGroup>
