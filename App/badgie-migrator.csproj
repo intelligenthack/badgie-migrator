@@ -5,7 +5,7 @@
 		<PackAsTool>true</PackAsTool>
 		<ToolCommandName>dotnet-badgie-migrator</ToolCommandName>
 		<PackageId>Badgie.Migrator</PackageId>
-		<TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
 		<Authors>Marco Cecconi et al.</Authors>
 		<Company>Intelligent Hack</Company>
 		<PackageTags>migrations;migrator;sql-server;sqlserver;postgres;pg;postgresql;schema migrations;mysql</PackageTags>
