@@ -54,8 +54,8 @@ Once the tool is installed you can simply call it like:
 dotnet-badgie-migrator <connection string> [drive:][path][filename pattern] [-f] [-i] [-d] [-n] [-V] [--no-stack-trace]
   -f runs mutated migrations
   -i if needed, installs the db table needed to store state
-  -d:(SqlServer|Postgres|MySql) specifies whether to run against SQL Server, PostgreSQL or MySql
-  -n avoids wrapping each execution in a transaction 
+  -d:(SqlServer|Postgres|MySql|SQLite) specifies the database type
+  -n avoids wrapping each execution in a transaction
   -V verbose mode for debugging
   --no-stack-trace omits the (mostly useless) stack traces
 ```
@@ -77,7 +77,7 @@ Here is a sample file to use as a template:
     "SqlType": "SqlServer",
     "Path": "Path 1",
     "UseTransaction": true
-  },                      
+  },
   {
     "ConnectionString": "Connection 2",
     "Force": false,
@@ -85,6 +85,14 @@ Here is a sample file to use as a template:
     "SqlType": "Postgres",
     "Path": "Path 2",
     "UseTransaction": false
+  },
+  {
+    "ConnectionString": "Data Source=migrations.db",
+    "Force": false,
+    "Install": true,
+    "SqlType": "SQLite",
+    "Path": "Path 3",
+    "UseTransaction": true
   }
 ]
 ```

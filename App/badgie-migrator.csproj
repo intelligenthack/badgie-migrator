@@ -8,7 +8,7 @@
 		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
 		<Authors>Marco Cecconi et al.</Authors>
 		<Company>Intelligent Hack</Company>
-		<PackageTags>migrations;migrator;sql-server;sqlserver;postgres;pg;postgresql;schema migrations;mysql</PackageTags>
+		<PackageTags>migrations;migrator;sql-server;sqlserver;postgres;pg;postgresql;schema migrations;mysql;sqlite</PackageTags>
 		<Description>A SQL migration tool originally built for Badgie. Use it to express database changes in a series of sql files which are executed only once.</Description>
 		<PackageProjectUrl>https://github.com/intelligenthack/badgie-migrator</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/intelligenthack/badgie-migrator.git</RepositoryUrl>
@@ -32,6 +32,7 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Dapper" Version="1.60.9" />
+		<PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0" />
 		<PackageReference Include="MySql.Data" Version="8.0.31" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
 		<PackageReference Include="Npgsql" Version="8.0.3" />

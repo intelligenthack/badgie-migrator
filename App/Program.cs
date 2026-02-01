@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Microsoft.Data.Sqlite;
 using MySql.Data.MySqlClient;
 using Npgsql;
 using System;
@@ -103,6 +104,12 @@ namespace Badgie.Migrator
                         installed = x.GetSchema("Tables", new string[] { null, "dbo", "MigrationRuns", null }).Rows.Count > 0;
                         break;
 
+                    case SqlType.SQLite:
+                        if (config.Verbose) Console.WriteLine("Info: verifying table on SQLite");
+                        installed = x.QueryFirstOrDefault<int>(
+                            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='MigrationRuns'") > 0;
+                        break;
+
                     default:
                         throw new NotSupportedException();
                 }
@@ -157,6 +164,16 @@ namespace Badgie.Migrator
 
                         return conn;
                     }
+                case SqlType.SQLite:
+                    {
+                        var conn = new SqliteConnection(config.ConnectionString);
+                        if (conn.State != ConnectionState.Open)
+                        {
+                            conn.Open();
+                        }
+
+                        return conn;
+                    }
                 default:
                     throw new NotSupportedException();
             }
@@ -198,6 +215,15 @@ CREATE TABLE `migration_runs` (
   `migration_result` tinyint NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
+                case SqlType.SQLite:
+                    return @"
+CREATE TABLE MigrationRuns (
+    Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    LastRun TEXT NOT NULL,
+    Filename TEXT NOT NULL,
+    MD5 TEXT NOT NULL,
+    MigrationResult INTEGER NOT NULL
+);";
                 default:
                     throw new NotSupportedException();
             }

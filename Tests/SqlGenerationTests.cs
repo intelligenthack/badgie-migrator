@@ -101,6 +101,32 @@ namespace Badgie.Migrator.Tests
         }
 
         [Test]
+        public void SQLite_TableCreationStatement_IsValid()
+        {
+            var config = new Config { SqlType = SqlType.SQLite };
+            var sql = GetTableCreationStatement(config);
+
+            Assert.IsNotNull(sql);
+            Assert.IsTrue(sql.Contains("CREATE TABLE MigrationRuns"));
+            Assert.IsTrue(sql.Contains("INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT"));
+            Assert.IsTrue(sql.Contains("TEXT NOT NULL"));
+            Assert.IsTrue(sql.Contains("INTEGER NOT NULL"));
+        }
+
+        [Test]
+        public void SQLite_UsesCorrectColumnNames()
+        {
+            var config = new Config { SqlType = SqlType.SQLite };
+            var sql = GetTableCreationStatement(config);
+
+            Assert.IsTrue(sql.Contains("Id"));
+            Assert.IsTrue(sql.Contains("LastRun"));
+            Assert.IsTrue(sql.Contains("Filename"));
+            Assert.IsTrue(sql.Contains("MD5"));
+            Assert.IsTrue(sql.Contains("MigrationResult"));
+        }
+
+        [Test]
         public void AllDatabases_HaveMatchingColumnCount()
         {
             // Each database should define exactly 5 columns
@@ -109,15 +135,18 @@ namespace Badgie.Migrator.Tests
             var sqlServerSql = GetTableCreationStatement(new Config { SqlType = SqlType.SqlServer });
             var postgresSql = GetTableCreationStatement(new Config { SqlType = SqlType.Postgres });
             var mySqlSql = GetTableCreationStatement(new Config { SqlType = SqlType.MySql });
+            var sqliteSql = GetTableCreationStatement(new Config { SqlType = SqlType.SQLite });
 
             // Count column definitions (rough check via NOT NULL occurrences)
             var sqlServerColumns = System.Text.RegularExpressions.Regex.Matches(sqlServerSql, @"NOT NULL").Count;
             var postgresColumns = System.Text.RegularExpressions.Regex.Matches(postgresSql, @"NOT NULL").Count;
             var mySqlColumns = System.Text.RegularExpressions.Regex.Matches(mySqlSql, @"NOT NULL").Count;
+            var sqliteColumns = System.Text.RegularExpressions.Regex.Matches(sqliteSql, @"NOT NULL").Count;
 
             Assert.AreEqual(expectedColumns, sqlServerColumns, "SQL Server should have 5 columns");
             Assert.AreEqual(expectedColumns, postgresColumns, "Postgres should have 5 columns");
             Assert.AreEqual(expectedColumns, mySqlColumns, "MySQL should have 5 columns");
+            Assert.AreEqual(expectedColumns, sqliteColumns, "SQLite should have 5 columns");
         }
     }
 }

@@ -4,6 +4,7 @@
     {
         Postgres,
         SqlServer,
-        MySql
+        MySql,
+        SQLite
     }
 }
