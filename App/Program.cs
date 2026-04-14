@@ -406,11 +406,9 @@ CREATE TABLE {schema}.MigrationRuns (
                 RunFile(sql, config);
                 using var conn = CreateConnection(config);
                 conn.Execute(config.Schema == null
-                    ? config.SqlType switch
-                    {
-                        SqlType.MySql => "update `migration_runs` set last_run = @LastRun, migration_result = @MigrationResult, md5 = @MD5 where filename = @Filename",
-                        _ => "update MigrationRuns set LastRun = @LastRun, MigrationResult = @MigrationResult, MD5 = @MD5 where Filename = @Filename"
-                    }
+                    ? (config.SqlType == SqlType.MySql
+                        ? "update `migration_runs` set last_run = @LastRun, migration_result = @MigrationResult, md5 = @MD5 where filename = @Filename"
+                        : "update MigrationRuns set LastRun = @LastRun, MigrationResult = @MigrationResult, MD5 = @MD5 where Filename = @Filename")
                     : config.SqlType switch
                     {
                         SqlType.MySql => $"update `{config.Schema}`.`migration_runs` set last_run = @LastRun, migration_result = @MigrationResult, md5 = @MD5 where filename = @Filename",

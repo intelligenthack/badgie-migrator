@@ -281,7 +281,7 @@ namespace Badgie.Migrator.Tests
         [Test]
         public void SchemaParam()
         {
-            var args = new string[] { "connection", "-s:myschema" };
+            var args = new[] { "connection", "-s:myschema" };
             var config = Config.FromArgs(args);
             Assert.IsNotNull(config);
             Assert.AreEqual("myschema", config.Schema);
@@ -290,7 +290,7 @@ namespace Badgie.Migrator.Tests
         [Test]
         public void SchemaParamWithOtherFlags()
         {
-            var args = new string[] { "connection", "path", "-i", "-d:Postgres", "-s:scheduler" };
+            var args = new[] { "connection", "path", "-i", "-d:Postgres", "-s:scheduler" };
             var config = Config.FromArgs(args);
             Assert.IsNotNull(config);
             Assert.AreEqual("scheduler", config.Schema);
@@ -302,7 +302,7 @@ namespace Badgie.Migrator.Tests
         [Test]
         public void SchemaDefaultsToNull()
         {
-            var args = new string[] { "connection" };
+            var args = new[] { "connection" };
             var config = Config.FromArgs(args);
             Assert.IsNotNull(config);
             Assert.IsNull(config.Schema);
@@ -311,7 +311,7 @@ namespace Badgie.Migrator.Tests
         [Test]
         public void SchemaEmptyValueReturnsNull()
         {
-            var args = new string[] { "connection", "-s:" };
+            var args = new[] { "connection", "-s:" };
             var config = Config.FromArgs(args);
             Assert.IsNull(config);
         }
