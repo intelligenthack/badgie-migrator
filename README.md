@@ -73,13 +73,17 @@ Data Source=path/to/database.db
 Once the tool is installed you can simply call it like:
 
 ```
-dotnet-badgie-migrator <connection string> [drive:][path][filename pattern] [-f] [-i] [-d] [-n] [-V] [--no-stack-trace]
+dotnet-badgie-migrator <connection string> [drive:][path][filename pattern] [-f] [-i] [-d] [-n] [-s] [-V] [--no-stack-trace] [--strict-encoding]
   -f runs mutated migrations
   -i if needed, installs the db table needed to store state
   -d:(SqlServer|Postgres|MySql|SQLite) specifies the database type
+  -s:<schema> specifies the schema for the migration tracking table
+              (defaults: 'public' for Postgres, 'dbo' for SQL Server,
+              'main' for SQLite, connection default for MySQL)
   -n avoids wrapping each execution in a transaction
   -V verbose mode for debugging
   --no-stack-trace omits the (mostly useless) stack traces
+  --strict-encoding refuses to run migrations containing invalid characters
 ```
 
 Alternatively, if you have many databases to run migrations against you can pass a json configuration file with many configurations:
