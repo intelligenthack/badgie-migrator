@@ -25,9 +25,9 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>1.6.0</Version>
+		<Version>1.7.0</Version>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-		<PackageReleaseNotes>v1.6.0: Added SQLite support, updated dependencies (Dapper 2.x, Microsoft.Data.SqlClient 6.x), fixed security vulnerabilities, added documentation and OSS templates.</PackageReleaseNotes>
+		<PackageReleaseNotes>v1.7.0: Added -s:&lt;schema&gt; parameter to specify the schema for the migration tracking table, enabling multi-schema deployments. Added --strict-encoding flag. Deprecation warning when -s is not specified.</PackageReleaseNotes>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 	<ItemGroup>
