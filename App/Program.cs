@@ -29,6 +29,13 @@ namespace Badgie.Migrator
                 Environment.Exit(-2);
             }
 
+            if (_config.Schema == null)
+            {
+                Console.Error.WriteLine(
+                    "Warning: No -s:<schema> specified. The migration tracking table uses " +
+                    "the legacy default schema. In a future version, -s will be required.");
+            }
+
             if (_config.Configurations != null && _config.Configurations.Count > 1)
             {
                 if (_config.Verbose) Console.WriteLine("Info: {0} configurations found.", _config.Configurations.Count);
@@ -87,31 +94,62 @@ namespace Badgie.Migrator
             bool installed;
             using (var x = CreateConnection(config))
             {
-                switch (config.SqlType)
+                if (config.Schema == null)
                 {
-                    case SqlType.MySql:
-                        if (config.Verbose) Console.WriteLine("Info: verifying table on MySQL");
-                        installed = x.GetSchema("Tables", new string[] { null, x.Database, "migration_runs", null }).Rows.Count > 0;
-                        break;
+                    switch (config.SqlType)
+                    {
+                        case SqlType.MySql:
+                            if (config.Verbose) Console.WriteLine("Info: verifying table on MySQL");
+                            installed = x.GetSchema("Tables", new string[] { null, x.Database, "migration_runs", null }).Rows.Count > 0;
+                            break;
 
-                    case SqlType.Postgres:
-                        if (config.Verbose) Console.WriteLine("Info: verifying table on Postgres");
-                        installed = x.GetSchema("Tables", new string[] { null, "public", "migrationruns", null }).Rows.Count > 0;
-                        break;
+                        case SqlType.Postgres:
+                            if (config.Verbose) Console.WriteLine("Info: verifying table on Postgres");
+                            installed = x.GetSchema("Tables", new string[] { null, "public", "migrationruns", null }).Rows.Count > 0;
+                            break;
 
-                    case SqlType.SqlServer:
-                        if (config.Verbose) Console.WriteLine("Info: verifying table on SQL Server");
-                        installed = x.GetSchema("Tables", new string[] { null, "dbo", "MigrationRuns", null }).Rows.Count > 0;
-                        break;
+                        case SqlType.SqlServer:
+                            if (config.Verbose) Console.WriteLine("Info: verifying table on SQL Server");
+                            installed = x.GetSchema("Tables", new string[] { null, "dbo", "MigrationRuns", null }).Rows.Count > 0;
+                            break;
 
-                    case SqlType.SQLite:
-                        if (config.Verbose) Console.WriteLine("Info: verifying table on SQLite");
-                        installed = x.QueryFirstOrDefault<int>(
-                            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='MigrationRuns'") > 0;
-                        break;
+                        case SqlType.SQLite:
+                            if (config.Verbose) Console.WriteLine("Info: verifying table on SQLite");
+                            installed = x.GetSchema("Tables", new string[] { null, null, "MigrationRuns", null }).Rows.Count > 0;
+                            break;
 
-                    default:
-                        throw new NotSupportedException();
+                        default:
+                            throw new NotSupportedException();
+                    }
+                }
+                else
+                {
+                    var schema = config.Schema;
+                    switch (config.SqlType)
+                    {
+                        case SqlType.MySql:
+                            if (config.Verbose) Console.WriteLine("Info: verifying table on MySQL");
+                            installed = x.GetSchema("Tables", new string[] { null, schema, "migration_runs", null }).Rows.Count > 0;
+                            break;
+
+                        case SqlType.Postgres:
+                            if (config.Verbose) Console.WriteLine("Info: verifying table on Postgres");
+                            installed = x.GetSchema("Tables", new string[] { null, schema, "migrationruns", null }).Rows.Count > 0;
+                            break;
+
+                        case SqlType.SqlServer:
+                            if (config.Verbose) Console.WriteLine("Info: verifying table on SQL Server");
+                            installed = x.GetSchema("Tables", new string[] { null, schema, "MigrationRuns", null }).Rows.Count > 0;
+                            break;
+
+                        case SqlType.SQLite:
+                            if (config.Verbose) Console.WriteLine("Info: verifying table on SQLite");
+                            installed = x.GetSchema("Tables", new string[] { schema, null, "MigrationRuns", null }).Rows.Count > 0;
+                            break;
+
+                        default:
+                            throw new NotSupportedException();
+                    }
                 }
             }
             if (config.Verbose) Console.WriteLine(installed ? "Info: table found!" : "Info: table not found!");
@@ -182,10 +220,12 @@ namespace Badgie.Migrator
 
         private static string TableCreationStatement(Config config)
         {
-            switch (config.SqlType)
+            if (config.Schema == null)
             {
-                case SqlType.SqlServer:
-                    return @"
+                switch (config.SqlType)
+                {
+                    case SqlType.SqlServer:
+                        return @"
 CREATE TABLE [dbo].[MigrationRuns] (
     Id              INT             IDENTITY (1, 1) NOT NULL,
     LastRun         DATETIME        NOT NULL,
@@ -194,8 +234,8 @@ CREATE TABLE [dbo].[MigrationRuns] (
     MigrationResult TINYINT         NOT NULL,
     CONSTRAINT [PK_MigrationRuns] PRIMARY KEY CLUSTERED ([Id] ASC)
 );";
-                case SqlType.Postgres:
-                    return @"
+                    case SqlType.Postgres:
+                        return @"
 CREATE SEQUENCE MigrationRuns_Id_seq INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 START 1 CACHE 1;
 CREATE TABLE ""public"".MigrationRuns (
     Id integer DEFAULT nextval('MigrationRuns_Id_seq') NOT NULL,
@@ -205,8 +245,8 @@ CREATE TABLE ""public"".MigrationRuns (
     MigrationResult integer NOT NULL,
     CONSTRAINT ""MigrationRuns_Id"" PRIMARY KEY (Id)
 ) WITH (oids = false);";
-                case SqlType.MySql:
-                    return @"
+                    case SqlType.MySql:
+                        return @"
 CREATE TABLE `migration_runs` (
   `id` int NOT NULL AUTO_INCREMENT,
   `last_run` datetime NOT NULL,
@@ -215,8 +255,8 @@ CREATE TABLE `migration_runs` (
   `migration_result` tinyint NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
-                case SqlType.SQLite:
-                    return @"
+                    case SqlType.SQLite:
+                        return @"
 CREATE TABLE MigrationRuns (
     Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     LastRun TEXT NOT NULL,
@@ -224,8 +264,58 @@ CREATE TABLE MigrationRuns (
     MD5 TEXT NOT NULL,
     MigrationResult INTEGER NOT NULL
 );";
-                default:
-                    throw new NotSupportedException();
+                    default:
+                        throw new NotSupportedException();
+                }
+            }
+            else
+            {
+                var schema = config.Schema;
+                switch (config.SqlType)
+                {
+                    case SqlType.SqlServer:
+                        return $@"
+CREATE TABLE [{schema}].[MigrationRuns] (
+    Id              INT             IDENTITY (1, 1) NOT NULL,
+    LastRun         DATETIME        NOT NULL,
+    Filename        NVARCHAR(2000)  NOT NULL,
+    MD5             VARCHAR(50)     NOT NULL,
+    MigrationResult TINYINT         NOT NULL,
+    CONSTRAINT [PK_MigrationRuns] PRIMARY KEY CLUSTERED ([Id] ASC)
+);";
+                    case SqlType.Postgres:
+                        return $@"
+CREATE SEQUENCE ""{schema}"".""MigrationRuns_Id_seq"" INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 START 1 CACHE 1;
+CREATE TABLE ""{schema}"".MigrationRuns (
+    Id integer DEFAULT nextval('""{schema}"".""MigrationRuns_Id_seq""') NOT NULL,
+    LastRun timestamp  NOT NULL,
+    Filename character varying(2000) NOT NULL,
+    MD5 character varying(50) NOT NULL,
+    MigrationResult integer NOT NULL,
+    CONSTRAINT ""MigrationRuns_Id"" PRIMARY KEY (Id)
+) WITH (oids = false);";
+                    case SqlType.MySql:
+                        return $@"
+CREATE TABLE `{schema}`.`migration_runs` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `last_run` datetime NOT NULL,
+  `filename` text NOT NULL,
+  `md5` varchar(50) NOT NULL,
+  `migration_result` tinyint NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
+                    case SqlType.SQLite:
+                        return $@"
+CREATE TABLE {schema}.MigrationRuns (
+    Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    LastRun TEXT NOT NULL,
+    Filename TEXT NOT NULL,
+    MD5 TEXT NOT NULL,
+    MigrationResult INTEGER NOT NULL
+);";
+                    default:
+                        throw new NotSupportedException();
+                }
             }
         }
 
@@ -279,14 +369,25 @@ CREATE TABLE MigrationRuns (
             MigrationRun run;
             using (var conn = CreateConnection(config))
             {
-                run = conn.QueryFirstOrDefault<MigrationRun>(
-                    config.SqlType switch
-                    {
-                        SqlType.MySql => "select * from `migration_runs` where filename = @migrationFilename",
-                        _ => "select * from MigrationRuns where Filename = @migrationFilename"
-                    },
-                    new { migrationFilename = Path.GetFileName(migrationFilename) }
-                );
+                run = config.Schema == null
+                    ? conn.QueryFirstOrDefault<MigrationRun>(
+                        config.SqlType switch
+                        {
+                            SqlType.MySql => "select * from `migration_runs` where filename = @migrationFilename",
+                            _ => "select * from MigrationRuns where Filename = @migrationFilename"
+                        },
+                        new { migrationFilename = Path.GetFileName(migrationFilename) }
+                    )
+                    : conn.QueryFirstOrDefault<MigrationRun>(
+                        config.SqlType switch
+                        {
+                            SqlType.MySql => $"select * from `{config.Schema}`.`migration_runs` where filename = @migrationFilename",
+                            SqlType.Postgres => $@"select * from ""{config.Schema}"".""MigrationRuns"" where ""Filename"" = @migrationFilename",
+                            SqlType.SqlServer => $"select * from [{config.Schema}].[MigrationRuns] where Filename = @migrationFilename",
+                            _ => $"select * from {config.Schema}.MigrationRuns where Filename = @migrationFilename"
+                        },
+                        new { migrationFilename = Path.GetFileName(migrationFilename) }
+                    );
             }
 
             if (run != null)
@@ -304,12 +405,19 @@ CREATE TABLE MigrationRuns (
 
                 RunFile(sql, config);
                 using var conn = CreateConnection(config);
-                conn.Execute(config.SqlType switch
-                {
-                    SqlType.MySql => "update `migration_runs` set last_run = @LastRun, migration_result = @MigrationResult, md5 = @MD5 where filename = @Filename",
-                    _ => "update MigrationRuns set LastRun = @LastRun, MigrationResult = @MigrationResult, MD5 = @MD5 where Filename = @Filename"
+                conn.Execute(config.Schema == null
+                    ? (config.SqlType == SqlType.MySql
+                        ? "update `migration_runs` set last_run = @LastRun, migration_result = @MigrationResult, md5 = @MD5 where filename = @Filename"
+                        : "update MigrationRuns set LastRun = @LastRun, MigrationResult = @MigrationResult, MD5 = @MD5 where Filename = @Filename")
+                    : config.SqlType switch
+                    {
+                        SqlType.MySql => $"update `{config.Schema}`.`migration_runs` set last_run = @LastRun, migration_result = @MigrationResult, md5 = @MD5 where filename = @Filename",
+                        SqlType.Postgres => $@"update ""{config.Schema}"".""MigrationRuns"" set ""LastRun"" = @LastRun, ""MigrationResult"" = @MigrationResult, ""MD5"" = @MD5 where ""Filename"" = @Filename",
+                        SqlType.SqlServer => $"update [{config.Schema}].[MigrationRuns] set LastRun = @LastRun, MigrationResult = @MigrationResult, MD5 = @MD5 where Filename = @Filename",
+                        _ => $"update {config.Schema}.MigrationRuns set LastRun = @LastRun, MigrationResult = @MigrationResult, MD5 = @MD5 where Filename = @Filename"
+                    }
 
-                }, new MigrationRun
+                , new MigrationRun
                 {
                     LastRun = DateTime.UtcNow,
                     Filename = Path.GetFileName(migrationFilename),
@@ -324,12 +432,21 @@ CREATE TABLE MigrationRuns (
             using (var conn = CreateConnection(config))
             {
                 if (config.Verbose) Console.WriteLine("Info: saving in migration table");
-                conn.Execute(config.SqlType switch
-                {
-                    SqlType.MySql => "insert into `migration_runs` (last_run, migration_result, md5, filename) values (@LastRun, @MigrationResult, @MD5, @Filename)",
-                    _ => "insert into MigrationRuns (LastRun, MigrationResult, MD5, Filename) values (@LastRun, @MigrationResult, @MD5, @Filename)"
+                conn.Execute(config.Schema == null
+                    ? config.SqlType switch
+                    {
+                        SqlType.MySql => "insert into `migration_runs` (last_run, migration_result, md5, filename) values (@LastRun, @MigrationResult, @MD5, @Filename)",
+                        _ => "insert into MigrationRuns (LastRun, MigrationResult, MD5, Filename) values (@LastRun, @MigrationResult, @MD5, @Filename)"
+                    }
+                    : config.SqlType switch
+                    {
+                        SqlType.MySql => $"insert into `{config.Schema}`.`migration_runs` (last_run, migration_result, md5, filename) values (@LastRun, @MigrationResult, @MD5, @Filename)",
+                        SqlType.Postgres => $@"insert into ""{config.Schema}"".""MigrationRuns"" (""LastRun"", ""MigrationResult"", ""MD5"", ""Filename"") values (@LastRun, @MigrationResult, @MD5, @Filename)",
+                        SqlType.SqlServer => $"insert into [{config.Schema}].[MigrationRuns] (LastRun, MigrationResult, MD5, Filename) values (@LastRun, @MigrationResult, @MD5, @Filename)",
+                        _ => $"insert into {config.Schema}.MigrationRuns (LastRun, MigrationResult, MD5, Filename) values (@LastRun, @MigrationResult, @MD5, @Filename)"
+                    }
 
-                }, new MigrationRun
+                , new MigrationRun
                 {
                     LastRun = DateTime.UtcNow,
                     Filename = Path.GetFileName(migrationFilename),

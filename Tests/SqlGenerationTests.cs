@@ -127,6 +127,68 @@ namespace Badgie.Migrator.Tests
         }
 
         [Test]
+        public void Postgres_TableCreationStatement_UsesCustomSchema()
+        {
+            var config = new Config { SqlType = SqlType.Postgres, Schema = "scheduler" };
+            var sql = GetTableCreationStatement(config);
+
+            Assert.IsNotNull(sql);
+            Assert.IsTrue(sql.Contains(@"CREATE SEQUENCE ""scheduler"".""MigrationRuns_Id_seq"""));
+            Assert.IsTrue(sql.Contains(@"CREATE TABLE ""scheduler"".MigrationRuns"));
+            Assert.IsFalse(sql.Contains(@"""public"""));
+        }
+
+        [Test]
+        public void SqlServer_TableCreationStatement_UsesCustomSchema()
+        {
+            var config = new Config { SqlType = SqlType.SqlServer, Schema = "myschema" };
+            var sql = GetTableCreationStatement(config);
+
+            Assert.IsNotNull(sql);
+            Assert.IsTrue(sql.Contains("CREATE TABLE [myschema].[MigrationRuns]"));
+            Assert.IsFalse(sql.Contains("[dbo]"));
+        }
+
+        [Test]
+        public void MySql_TableCreationStatement_UsesCustomSchema()
+        {
+            var config = new Config { SqlType = SqlType.MySql, Schema = "mydb" };
+            var sql = GetTableCreationStatement(config);
+
+            Assert.IsNotNull(sql);
+            Assert.IsTrue(sql.Contains("`mydb`.`migration_runs`"));
+        }
+
+        [Test]
+        public void SQLite_TableCreationStatement_UsesCustomSchema()
+        {
+            var config = new Config { SqlType = SqlType.SQLite, Schema = "attached" };
+            var sql = GetTableCreationStatement(config);
+
+            Assert.IsNotNull(sql);
+            Assert.IsTrue(sql.Contains("CREATE TABLE attached.MigrationRuns"));
+        }
+
+        [Test]
+        public void Postgres_TableCreationStatement_DefaultSchema_MatchesOriginal()
+        {
+            var config = new Config { SqlType = SqlType.Postgres };
+            var sql = GetTableCreationStatement(config);
+
+            Assert.IsTrue(sql.Contains(@"CREATE TABLE ""public"".MigrationRuns"));
+            Assert.IsTrue(sql.Contains("CREATE SEQUENCE MigrationRuns_Id_seq"));
+        }
+
+        [Test]
+        public void SqlServer_TableCreationStatement_DefaultSchema_MatchesOriginal()
+        {
+            var config = new Config { SqlType = SqlType.SqlServer };
+            var sql = GetTableCreationStatement(config);
+
+            Assert.IsTrue(sql.Contains("CREATE TABLE [dbo].[MigrationRuns]"));
+        }
+
+        [Test]
         public void AllDatabases_HaveMatchingColumnCount()
         {
             // Each database should define exactly 5 columns
