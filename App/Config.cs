@@ -19,6 +19,7 @@ namespace Badgie.Migrator
         public bool Verbose { get; set; } = false;
         public bool StackTraces {get; set; } = true;
         public bool StrictEncoding {get; set; } = false;
+        public string Schema { get; set; }
 
         public List<Config> Configurations { get; set; }
 
@@ -39,10 +40,13 @@ namespace Badgie.Migrator
 
             if (args == null || args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
             {
-                Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-d:(SqlServer|Postgres|MySql)] [-f] [-i] [-n] [-V] [--no-stack-trace] [--strict-encoding]
+                Console.Error.WriteLine(@"Usage: dotnet-badgie-migrator <connection string> [drive:][path][filename] [-d:(SqlServer|Postgres|MySql|SQLite)] [-f] [-i] [-n] [-s:<schema>] [-V] [--no-stack-trace] [--strict-encoding]
 -f                      runs mutated migrations
 -i                      if needed, installs the db table needed to store state
--d:<type>               specifies whether to run against SQL Server, PostgreSQL or MySql
+-d:<type>               specifies whether to run against SQL Server, PostgreSQL, MySql or SQLite
+-s:<schema>             specifies the schema for the migration tracking table
+                        (e.g. -s:myschema). Defaults: 'public' (Postgres), 'dbo' (SQL Server),
+                        'main' (SQLite), or connection default (MySQL)
 -n                      avoids wrapping each execution in a transaction
 -V                      Verbose mode: executes with tracing
 --no-stack-trace        Omit the (mostly useless) stack traces
@@ -58,17 +62,18 @@ Alternative usage: dotnet-badgie-migrator -json=filename
                             ""ConnectionString"": <connection string>,
                             ""Force"": true|false,
                             ""Install"": true|false,
-                            ""SqlType"": ""SqlServer""|""Postgres""|""MySql"",
+                            ""SqlType"": ""SqlServer""|""Postgres""|""MySql""|""SQLite"",
                             ""Path"": ""<path to migrations with wildcards>"",
                             ""UseTransaction"": true|false,
                             ""StackTraces"": true|false,
-                            ""StrictEncoding"": true|false
+                            ""StrictEncoding"": true|false,
+                            ""Schema"": ""<optional schema name>""
                           },
                           {
                             ""ConnectionString"": <connection string>,
                             ""Force"": true|false,
                             ""Install"": true|false,
-                            ""SqlType"": ""SqlServer""|""Postgres""|""MySql"",
+                            ""SqlType"": ""SqlServer""|""Postgres""|""MySql""|""SQLite"",
                             ""Path"": ""<path to migrations with wildcards>"",
                             ""UseTransaction"": true|false,
                             ""StackTraces"": true|false,
@@ -127,6 +132,14 @@ Alternative usage: dotnet-badgie-migrator -json=filename
                         }
 
                         config.SqlType = sqlType;
+                        break;
+
+                    case "-s":
+                        if (!str.StartsWith("-s:") || str.Length <= 3)
+                        {
+                            return null;
+                        }
+                        config.Schema = str[3..];
                         break;
 
                     case "-n":

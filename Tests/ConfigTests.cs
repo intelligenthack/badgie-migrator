@@ -278,6 +278,44 @@ namespace Badgie.Migrator.Tests
         }
 
 
+        [Test]
+        public void SchemaParam()
+        {
+            var args = new string[] { "connection", "-s:myschema" };
+            var config = Config.FromArgs(args);
+            Assert.IsNotNull(config);
+            Assert.AreEqual("myschema", config.Schema);
+        }
+
+        [Test]
+        public void SchemaParamWithOtherFlags()
+        {
+            var args = new string[] { "connection", "path", "-i", "-d:Postgres", "-s:scheduler" };
+            var config = Config.FromArgs(args);
+            Assert.IsNotNull(config);
+            Assert.AreEqual("scheduler", config.Schema);
+            Assert.AreEqual(true, config.Install);
+            Assert.AreEqual(SqlType.Postgres, config.SqlType);
+            Assert.AreEqual("path", config.Path);
+        }
+
+        [Test]
+        public void SchemaDefaultsToNull()
+        {
+            var args = new string[] { "connection" };
+            var config = Config.FromArgs(args);
+            Assert.IsNotNull(config);
+            Assert.IsNull(config.Schema);
+        }
+
+        [Test]
+        public void SchemaEmptyValueReturnsNull()
+        {
+            var args = new string[] { "connection", "-s:" };
+            var config = Config.FromArgs(args);
+            Assert.IsNull(config);
+        }
+
         [TestCase("path")]
         [TestCase("C:\\foo")]
         [TestCase("C:\\foo\\*.sql")]
