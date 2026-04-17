@@ -382,7 +382,7 @@ CREATE TABLE {schema}.MigrationRuns (
                         config.SqlType switch
                         {
                             SqlType.MySql => $"select * from `{config.Schema}`.`migration_runs` where filename = @migrationFilename",
-                            SqlType.Postgres => $@"select * from ""{config.Schema}"".""MigrationRuns"" where ""Filename"" = @migrationFilename",
+                            SqlType.Postgres => $@"select * from ""{config.Schema}"".MigrationRuns where Filename = @migrationFilename",
                             SqlType.SqlServer => $"select * from [{config.Schema}].[MigrationRuns] where Filename = @migrationFilename",
                             _ => $"select * from {config.Schema}.MigrationRuns where Filename = @migrationFilename"
                         },
@@ -412,7 +412,7 @@ CREATE TABLE {schema}.MigrationRuns (
                     : config.SqlType switch
                     {
                         SqlType.MySql => $"update `{config.Schema}`.`migration_runs` set last_run = @LastRun, migration_result = @MigrationResult, md5 = @MD5 where filename = @Filename",
-                        SqlType.Postgres => $@"update ""{config.Schema}"".""MigrationRuns"" set ""LastRun"" = @LastRun, ""MigrationResult"" = @MigrationResult, ""MD5"" = @MD5 where ""Filename"" = @Filename",
+                        SqlType.Postgres => $@"update ""{config.Schema}"".MigrationRuns set LastRun = @LastRun, MigrationResult = @MigrationResult, MD5 = @MD5 where Filename = @Filename",
                         SqlType.SqlServer => $"update [{config.Schema}].[MigrationRuns] set LastRun = @LastRun, MigrationResult = @MigrationResult, MD5 = @MD5 where Filename = @Filename",
                         _ => $"update {config.Schema}.MigrationRuns set LastRun = @LastRun, MigrationResult = @MigrationResult, MD5 = @MD5 where Filename = @Filename"
                     }
@@ -441,7 +441,7 @@ CREATE TABLE {schema}.MigrationRuns (
                     : config.SqlType switch
                     {
                         SqlType.MySql => $"insert into `{config.Schema}`.`migration_runs` (last_run, migration_result, md5, filename) values (@LastRun, @MigrationResult, @MD5, @Filename)",
-                        SqlType.Postgres => $@"insert into ""{config.Schema}"".""MigrationRuns"" (""LastRun"", ""MigrationResult"", ""MD5"", ""Filename"") values (@LastRun, @MigrationResult, @MD5, @Filename)",
+                        SqlType.Postgres => $@"insert into ""{config.Schema}"".MigrationRuns (LastRun, MigrationResult, MD5, Filename) values (@LastRun, @MigrationResult, @MD5, @Filename)",
                         SqlType.SqlServer => $"insert into [{config.Schema}].[MigrationRuns] (LastRun, MigrationResult, MD5, Filename) values (@LastRun, @MigrationResult, @MD5, @Filename)",
                         _ => $"insert into {config.Schema}.MigrationRuns (LastRun, MigrationResult, MD5, Filename) values (@LastRun, @MigrationResult, @MD5, @Filename)"
                     }

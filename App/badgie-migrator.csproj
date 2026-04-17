@@ -25,9 +25,9 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>1.7.0</Version>
+		<Version>1.7.1</Version>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-		<PackageReleaseNotes>v1.7.0: Added -s:&lt;schema&gt; parameter to specify the schema for the migration tracking table, enabling multi-schema deployments. Added --strict-encoding flag. Deprecation warning when -s is not specified.</PackageReleaseNotes>
+		<PackageReleaseNotes>v1.7.1: Fix -s:&lt;schema&gt; on Postgres — SELECT/UPDATE/INSERT queries now use unquoted identifiers so they resolve to the lowercase table name Postgres actually creates, matching EnsureTableExists and the non-schema code path.</PackageReleaseNotes>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 	<ItemGroup>
